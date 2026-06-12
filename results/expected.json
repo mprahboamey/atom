@@ -1,0 +1,31 @@
+{
+  "entry_point": "python scripts/run_all.py",
+  "expected_status": "all commands return 0",
+  "checks": [
+    {
+      "name": "beam propagation",
+      "source": "examples/01_propagate_beam.py",
+      "expectation": "total intensity is conserved within floating point tolerance"
+    },
+    {
+      "name": "phase mask training",
+      "source": "examples/02_train_phase_mask.py",
+      "expectation": "loss decreases from the initial value during the fixed 80 step run"
+    },
+    {
+      "name": "optical attention scores",
+      "source": "examples/03_optical_attention.py",
+      "expectation": "max difference from scaled dot product is 0 within printed precision"
+    },
+    {
+      "name": "model validation",
+      "source": "examples/04_validate_model.py",
+      "expectation": "all conservation, reversibility, score, and gradient checks pass"
+    },
+    {
+      "name": "unit tests",
+      "source": "tests/",
+      "expectation": "all unittest checks pass"
+    }
+  ]
+}

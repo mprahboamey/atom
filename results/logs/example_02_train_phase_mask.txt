@@ -1,0 +1,6 @@
+Training one phase mask
+step 00: loss=0.025429
+step 20: loss=0.012094
+step 40: loss=0.011371
+step 60: loss=0.007769
+step 79: loss=0.003936

@@ -1,0 +1,48 @@
+{
+  "passed": true,
+  "python": "3.14.5",
+  "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
+  "torch": "2.12.0+cpu",
+  "runs": [
+    {
+      "name": "example_01_propagate_beam",
+      "kind": "example",
+      "command": "/usr/bin/python examples/01_propagate_beam.py",
+      "returncode": 0,
+      "duration_seconds": 1.359,
+      "log": "results/logs/example_01_propagate_beam.txt"
+    },
+    {
+      "name": "example_02_train_phase_mask",
+      "kind": "example",
+      "command": "/usr/bin/python examples/02_train_phase_mask.py",
+      "returncode": 0,
+      "duration_seconds": 2.0696,
+      "log": "results/logs/example_02_train_phase_mask.txt"
+    },
+    {
+      "name": "example_03_optical_attention",
+      "kind": "example",
+      "command": "/usr/bin/python examples/03_optical_attention.py",
+      "returncode": 0,
+      "duration_seconds": 1.2056,
+      "log": "results/logs/example_03_optical_attention.txt"
+    },
+    {
+      "name": "example_04_validate_model",
+      "kind": "validation",
+      "command": "/usr/bin/python examples/04_validate_model.py",
+      "returncode": 0,
+      "duration_seconds": 1.226,
+      "log": "results/logs/example_04_validate_model.txt"
+    },
+    {
+      "name": "unit_tests",
+      "kind": "test",
+      "command": "/usr/bin/python -m unittest discover tests",
+      "returncode": 0,
+      "duration_seconds": 1.3583,
+      "log": "results/logs/unit_tests.txt"
+    }
+  ]
+}

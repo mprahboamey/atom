@@ -1,0 +1,2 @@
+Optical attention scores
+max difference from scaled dot product: 0.00000000

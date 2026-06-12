@@ -1,0 +1,5 @@
+Beam propagation
+input total intensity:  314.159271
+output total intensity: 314.159210
+input peak intensity:   1.000000
+output peak intensity:  0.706398
