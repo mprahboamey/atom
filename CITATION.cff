@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+title: OPTIC
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Mprah-Boamey
+    alias: mprahboamey
+version: 0.1.0
+date-released: 2026-06-12
+url: "https://github.com/mprahboamey/THE_OPTIC"
+abstract: >
+  A PyTorch simulator for diffractive optical neural networks.
+  Implements Angular Spectrum Method propagation, trainable phase masks,
+  and interference-based attention scores with verified numerical results
+  and architecture-level projections for optical AI inference.
+license: MIT
