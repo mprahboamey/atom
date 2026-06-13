@@ -6,15 +6,15 @@ This document describes the physical and mathematical foundations of the simulat
 
 ## The core idea: weights as light
 
-In a standard neural network, weights are numbers sitting in DRAM. To run a forward pass, the GPU reads those numbers, multiplies them by the input, and writes the result back. The bottleneck is not computation — it is moving data between memory and compute.
+In a standard neural network, weights are numbers sitting in DRAM. To run a forward pass, the GPU reads those numbers, multiplies them by the input, and writes the result back. The bottleneck is not just computation but moving data between memory and compute.
 
-This project asks a different question: what if the weights were not numbers in memory, but phase structure encoded into a physical medium — specifically, a holographic crystal?
+This project asks a different question: what if the weights were not numbers in memory, but phase structure encoded into a physical medium, specifically, a holographic crystal?
 
-A holographic crystal stores information through its volume using Bragg angle selectivity. When a reference beam writes a hologram at a specific angle, only light arriving at that exact angle later reconstructs it. Change the angle by a fraction of a degree and you address a completely different stored pattern. This is angular multiplexing — the same cubic centimetre of crystal holds hundreds or thousands of independent holograms, each retrievable by angle.
+A holographic crystal stores information through its volume using Bragg angle selectivity. When a reference beam writes a hologram at a specific angle, only light arriving at that exact angle later reconstructs it. Change the angle by a fraction of a degree and you address a completely different stored pattern. This is angular multiplexing; the same cubic centimetre of crystal holds hundreds or thousands of independent holograms, each retrievable by angle.
 
-Applied to AI weights: encode each weight matrix as a phase mask written into the crystal at a specific Bragg angle. When a coherent input beam illuminates the crystal, the stored phase structure diffracts and interferes with it. The output intensity at the detector encodes the result of the computation — with no digital arithmetic, no memory bandwidth, and no clock cycles. The physics does the work.
+Applied to AI weights: encode each weight matrix as a phase mask written into the crystal at a specific Bragg angle. When a coherent input beam illuminates the crystal, the stored phase structure diffracts and interferes with it. The output intensity at the detector encodes the result of the computation with no digital arithmetic, no memory bandwidth, and no clock cycles.
 
-This simulator models that process in software, using real optical physics, with numerical verification at every step.
+This simulator models that process in software, using optical physics, with numerical verification at every step.
 
 ---
 
@@ -60,7 +60,7 @@ k  = 2π / wavelength
 
 Components where `kz²` is negative correspond to evanescent waves — fields that decay exponentially rather than propagate. These are suppressed.
 
-**Energy conservation.** Total intensity is conserved to within 2.3 × 10⁻⁷ relative error across all tested grid sizes and propagation distances — approximately 100× better than the stated tolerance. This confirms the simulator is not leaking or creating energy, which is the prerequisite for all projection claims downstream.
+**Energy conservation.** Total intensity is conserved to within 2.3 × 10⁻⁷ relative error across all tested grid sizes and propagation distances; approximately 100× better than the stated tolerance. This confirms the simulator is not leaking or creating energy, which is the prerequisite for all projection claims downstream.
 
 ---
 
@@ -72,11 +72,11 @@ A phase mask is the optical representation of a weight matrix:
 u_out(x, y) = u_in(x, y) * exp(1j * theta(x, y))
 ```
 
-`theta` is a trainable `nn.Parameter`. Each pixel of the mask is one weight value, encoded as a phase angle between 0 and 2π. The mask modifies the wavefront — reshaping the direction and interference pattern of the field — without absorbing energy. Intensity at the mask plane is unchanged.
+`theta` is a trainable `nn.Parameter`. Each pixel of the mask is one weight value, encoded as a phase angle between 0 and 2π. The mask modifies the wavefront reshaping the direction and interference pattern of the field, without absorbing energy. Intensity at the mask plane is unchanged.
 
 This is the key property that makes optical computation energy-efficient: the weights modify the field through phase rotation, not amplitude attenuation. No energy is consumed by the weight application itself.
 
-After propagation, the accumulated phase differences from multiple mask layers produce constructive and destructive interference that concentrates optical power at specific output locations — performing the equivalent of a learned linear transformation.
+After propagation, the accumulated phase differences from multiple mask layers produce constructive and destructive interference that concentrates optical power at specific output locations performing the equivalent of a learned linear transformation.
 
 Because `theta` is differentiable, a loss computed from the output intensity backpropagates through the propagation step and into the mask parameters. The full optical path trains end-to-end with standard gradient descent. Example 02 demonstrates this: a single phase mask is trained to focus a plane wave onto a Gaussian target spot, with loss decreasing from 0.025 to 0.004 over 150 steps.
 

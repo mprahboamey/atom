@@ -1,8 +1,7 @@
 # OPTIC
 
-**What if AI weights didn't live in memory — but in light?**
-
-That question led from CDs to holography to Bragg gratings to volumetric crystal storage. This repository is where that line of thinking lands: a numerically verified simulator showing that neural network weights, encoded as optical phase masks inside a holographic medium, perform attention computation exactly — not approximately — through the physics of wave interference.
+**What if AI weights didn't live in memory, but in light?**
+This repository documents a numerically verified simulation experiment showing that neural network weights, encoded as optical phases masks inside a holographic medium, performs attention computation exactly, not approximately, through the principle of wave interference .
 
 The core result: when AI weights are stored as phase structure in a volumetric crystal and a coherent beam passes through them, the resulting interference pattern produces attention scores algebraically identical to scaled dot-product attention. Zero error. Verified in code you can run in one command.
 
@@ -12,9 +11,9 @@ This repository provides the differentiable simulator, the numerical proofs, and
 
 ## The idea in plain terms
 
-A holographic crystal doesn't store images on a flat surface — it stores them *through the volume*, using the angle of the reference beam to write and read each pattern independently. This is Bragg angle selectivity: only light arriving at the correct angle reconstructs a specific hologram. Change the angle slightly, and you address a completely different stored pattern.
+A holographic crystal doesn't store images on a flat surface, it stores them *through the volume*, using the angle of the reference beam to write and read each pattern independently. This is Bragg angle selectivity: only light arriving at the correct angle reconstructs a specific hologram. Change the angle slightly, and you address a completely different stored pattern.
 
-Applied to AI: encode each weight matrix as a phase mask written into the crystal at a specific Bragg angle. To execute a forward pass, illuminate the crystal with a coherent beam encoding the input. The crystal — without any digital computation — performs the matrix operation through diffraction and interference. Read the output intensity at the detector plane.
+Applied to AI: encode each weight matrix as a phase mask written into the crystal at a specific Bragg angle. To execute a forward pass, illuminate the crystal with a coherent beam encoding the input. The crystal, without any digital computation performs the matrix operation through diffraction and interference. Read the output intensity at the detector plane.
 
 The volumetric geometry is what makes the capacity numbers interesting. A 1 cm³ crystal at 1 µm pixel resolution, 10 µm layer spacing, and 0.1° angular multiplexing steps holds:
 
@@ -22,7 +21,7 @@ The volumetric geometry is what makes the capacity numbers interesting. A 1 cm³
 1,000 depth layers × 900 angular channels × 100M pixels/layer = 90 trillion parameters
 ```
 
-That is not a trained model. It is the storage capacity of the medium — the number of independent weight values the physics can hold and address. For comparison, the H100 holds 20–35B parameters in 80–141 GB of HBM silicon. The projected density advantage is 700×–4,500× per cm³.
+That is not a trained model. It is the storage capacity of the medium, the number of independent weight values the physics can hold and address. For comparison, the H100 holds 20–35B parameters in 80–141 GB of HBM silicon. The projected density advantage is 700×–4,500× per cm³.
 
 ---
 
@@ -66,7 +65,7 @@ See `docs/benchmarks.md` for the full derivation of every figure.
 
 **Propagation.** The Angular Spectrum Method (ASM) propagates the complex optical field between layers. The field is decomposed into plane-wave components in the Fourier domain, each acquires a propagation phase, and the field is reconstructed via inverse FFT. Evanescent components are suppressed. Total intensity is conserved to within 2.3 × 10⁻⁷ relative error.
 
-**Attention via interference.** Query and key vectors are encoded as complex wave amplitudes — magnitude carries the absolute value, phase carries the sign (0 for positive, π for negative). The interference of these waves produces a score:
+**Attention via interference.** Query and key vectors are encoded as complex wave amplitudes, magnitude carries the absolute value, phase carries the sign (0 for positive, π for negative). The interference of these waves produces a score:
 
 ```
 score = Re( Σ q_wave · conj(k_wave) ) / √d
@@ -142,7 +141,7 @@ Suggested reading order:
 
 This is a software simulation. Verified results cover: energy conservation, field reversibility, phase-mask behaviour, and attention score equivalence. Architecture projections are derived from simulation geometry and published optical physics.
 
-Claims requiring physical validation — insertion loss, phase stability over temperature, manufacturing yield, measured inference accuracy on fabricated hardware — are not made here. That work requires a lab.
+Claims requiring physical validation, insertion loss, phase stability over temperature, manufacturing yield, measured inference accuracy on fabricated hardware, are not made here. That work requires a lab.
 
 ---
 

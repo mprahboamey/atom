@@ -10,7 +10,7 @@ Flat silicon chips store weights in 2D — area scales as d². A 1 cm² chip at 
 
 A holographic crystal stores weights in 3D, with an additional multiplexing dimension from Bragg angle selectivity. The capacity scales as d³ × angular_channels. This is why the numbers look different: it is not a more efficient 2D surface, it is a fundamentally different geometry.
 
-Bragg angle selectivity is the physical mechanism that makes angular multiplexing possible. In a photorefractive crystal (lithium niobate, barium titanate, and similar materials), writing a hologram with a reference beam at angle θ creates a periodic refractive index grating tuned to that angle. Reading back requires illumination at exactly the same angle — a shift of even 0.1° selects a completely different stored hologram. This is not a design choice. It is a consequence of the Bragg condition:
+Bragg angle selectivity is the physical mechanism that makes angular multiplexing possible. In a photorefractive crystal (lithium niobate, barium titanate, and similar materials), writing a hologram with a reference beam at angle θ creates a periodic refractive index grating tuned to that angle. Reading back requires illumination at exactly the same angle; a shift of even 0.1° selects a completely different stored hologram, a consequence of the Bragg condition:
 
 ```
 2 · d_grating · sin(θ) = m · λ
@@ -101,11 +101,11 @@ All three figures are reported. The conservative 7.5M TPS is the appropriate low
 
 ## Energy
 
-The energy advantage of optical inference is structural, not incremental.
+The energy advantage of optical inference is structural and fundamental
 
 Electronic transformer inference is dominated by memory bandwidth: each forward pass requires loading FP16 weight matrices from DRAM or HBM into on-chip SRAM for every layer. Published energy figures for the H100 place forward pass energy in the millijoule range for large models, with 60–80% of that attributable to data movement rather than arithmetic.
 
-Optical inference eliminates this bottleneck. The weights are the medium. No data movement occurs during inference — the input beam propagates through the stored phase structure and the computation happens through diffraction and interference. The energy cost of a phase mask operation is a phase rotation of an optical field, which under idealized conditions costs picojoules to femtojoules.
+Optical inference eliminates this bottleneck. The weights are the medium. No data movement occurs during inference; the input beam propagates through the stored phase structure and the computation happens through diffraction and interference. The energy cost of a phase mask operation is a phase rotation of an optical field, which under idealized conditions costs picojoules to femtojoules.
 
 The projected energy reduction is approximately 99% per forward pass. This assumes:
 
