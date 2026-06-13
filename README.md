@@ -1,6 +1,7 @@
 # OPTIC
 
 **What if AI weights didn't live in memory, but in light?**
+
 This repository documents a numerically verified simulation experiment showing that neural network weights, encoded as optical phases masks inside a holographic medium, performs attention computation exactly, not approximately, through the principle of wave interference .
 
 The core result: when AI weights are stored as phase structure in a volumetric crystal and a coherent beam passes through them, the resulting interference pattern produces attention scores algebraically identical to scaled dot-product attention. Zero error. Verified in code you can run in one command.
@@ -61,7 +62,7 @@ See `docs/benchmarks.md` for the full derivation of every figure.
 
 ## What the simulator models
 
-**Holographic weight storage.** Neural network weights are encoded as optical phase masks — `exp(1j × θ)` where `θ` is the weight value mapped to a phase angle. In a physical device these masks would be written into a photorefractive crystal using Bragg holography, with each angular channel storing an independent weight matrix. In this simulator, `θ` is a trainable `nn.Parameter` that learns via standard gradient descent.
+**Holographic weight storage.** Neural network weights are encoded as optical phase masks `exp(1j × θ)` where `θ` is the weight value mapped to a phase angle. In a physical device these masks would be written into a photorefractive crystal using Bragg holography, with each angular channel storing an independent weight matrix. In this simulator, `θ` is a trainable `nn.Parameter` that learns via standard gradient descent.
 
 **Propagation.** The Angular Spectrum Method (ASM) propagates the complex optical field between layers. The field is decomposed into plane-wave components in the Fourier domain, each acquires a propagation phase, and the field is reconstructed via inverse FFT. Evanescent components are suppressed. Total intensity is conserved to within 2.3 × 10⁻⁷ relative error.
 

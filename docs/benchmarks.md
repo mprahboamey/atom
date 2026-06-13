@@ -6,7 +6,7 @@ Every number in this document is either a direct simulation output or a derivati
 
 ## Why volumetric storage changes the numbers
 
-Flat silicon chips store weights in 2D — area scales as d². A 1 cm² chip at 7 nm node holds roughly 10¹² transistors, translating to tens of billions of parameters.
+Flat silicon chips store weights in 2D area scales as d². A 1 cm² chip at 7 nm node holds roughly 10¹² transistors, translating to tens of billions of parameters.
 
 A holographic crystal stores weights in 3D, with an additional multiplexing dimension from Bragg angle selectivity. The capacity scales as d³ × angular_channels. This is why the numbers look different: it is not a more efficient 2D surface, it is a fundamentally different geometry.
 
@@ -44,7 +44,7 @@ Pixels / layer = (1 cm / 1 µm)²           = 10⁸      (spatial resolution)
 Raw capacity   = 1,000 × 900 × 10⁸        = 9 × 10¹³ (90T)
 ```
 
-This is not a trained model size. It is the storage capacity of the volume — analogous to saying a hard drive holds 2 TB, before any data is written to it.
+This is not a trained model size. It is the storage capacity of the volume analogous to saying a hard drive holds 2 TB, before any data is written to it.
 
 Conservative estimates:
 
@@ -81,7 +81,7 @@ where L is path length, n = 1.5 (refractive index), c = 2.998 × 10⁸ m/s.
 | 3 cm | ~150 ps | |
 | 4 cm | ~200 ps | |
 
-For reference, H100 forward pass latency for an 8B parameter model is approximately 7–10 ms. The projected improvement is 5–7 orders of magnitude at the optical layer — contingent on the device being fabricated, which it has not been.
+For reference, H100 forward pass latency for an 8B parameter model is approximately 7–10 ms. The projected improvement is 5–7 orders of magnitude at the optical layer, contingent on the device being fabricated, which it has not been.
 
 These estimates model only the optical propagation time. Real devices incur additional overhead for coherent source stabilisation, detector readout, digital pre/post-processing (softmax, layer norm, residual addition), and I/O. See throughput section below for overhead-corrected figures.
 
@@ -95,7 +95,7 @@ These estimates model only the optical propagation time. Real devices incur addi
 | 50% duty cycle overhead | ~375M | I/O, source switching |
 | Conservative (100× overhead) | ~7.5M | Full digital integration overhead |
 
-All three figures are reported. The conservative 7.5M TPS is the appropriate lower bound for comparison against H100's 100–150 TPS at production batch sizes. Even the conservative figure represents a ~50,000× improvement — driven almost entirely by eliminating the memory bandwidth bottleneck, not by raw speed of the optical path itself.
+All three figures are reported. The conservative 7.5M TPS is the appropriate lower bound for comparison against H100's 100–150 TPS at production batch sizes. Even the conservative figure represents a ~50,000× improvement driven almost entirely by eliminating the memory bandwidth bottleneck, not just by raw speed of the optical path itself.
 
 ---
 
@@ -126,10 +126,10 @@ No energy measurement has been performed. These are architecture-level projectio
 | Forward/backward propagation is reversible | ✓ Numerically verified |
 | Optical scores identical to scaled dot-product attention | ✓ Exact to float precision |
 | Gradients finite through full optical path | ✓ Verified |
-| 90T parameter capacity per cm³ | Geometric derivation — not experimentally validated |
-| ~50–200 ps latency for 1–4 cm device | Physics derivation (τ = Ln/c) — not measured |
-| ~99% energy reduction | Architecture projection — not measured |
-| Bragg angle selectivity enables independent multiplexing | Established physics — not validated in this device |
+| 90T parameter capacity per cm³ | Geometric derivation not experimentally validated |
+| ~50–200 ps latency for 1–4 cm device | Physics derivation (τ = Ln/c) not measured |
+| ~99% energy reduction | Architecture projection not measured |
+| Bragg angle selectivity enables independent multiplexing | Established physics not validated in this device |
 | >99% inference accuracy | **Not claimed. No noise model in this codebase.** |
 
 The last row is a deliberate omission. Accuracy on a real task requires a noise model, a task benchmark, and hardware. A simulation running in a noiseless mathematical environment cannot make that claim honestly.

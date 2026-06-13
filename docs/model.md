@@ -58,7 +58,7 @@ kz = sqrt(k² - (2π fx)² - (2π fy)²)
 k  = 2π / wavelength
 ```
 
-Components where `kz²` is negative correspond to evanescent waves — fields that decay exponentially rather than propagate. These are suppressed.
+Components where `kz²` is negative correspond to evanescent waves fields that decay exponentially rather than propagate. These are suppressed.
 
 **Energy conservation.** Total intensity is conserved to within 2.3 × 10⁻⁷ relative error across all tested grid sizes and propagation distances; approximately 100× better than the stated tolerance. This confirms the simulator is not leaking or creating energy, which is the prerequisite for all projection claims downstream.
 
@@ -103,7 +103,7 @@ Expanding algebraically, this is identical to:
 score = q @ k.T / √d
 ```
 
-The validation script confirms both expressions produce the same values to floating-point precision — zero error at d = 8, 64, 512, and sub-10⁻⁶ at d = 2048 where floating-point rounding accumulates.
+The validation script confirms both expressions produce the same values to floating-point precision zero error at d = 8, 64, 512, and sub-10⁻⁶ at d = 2048 where floating-point rounding accumulates.
 
 Sign preservation is also verified explicitly: a query vector and its negation produce an anti-correlation score of exactly −1.000, confirming that semantic opposition is correctly encoded and recovered through the optical path.
 
