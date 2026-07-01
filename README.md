@@ -51,7 +51,7 @@ Derived from simulation geometry and published optical physics. Not measured har
 
 | Metric | NVIDIA H100 | OPTIC (projected) | Basis |
 |--------|-------------|-------------------|-------|
-| Parameter capacity | ~20–35B | ~90T raw / ~45T usable | Volumetric: 1,000 Z-layers × 900 Bragg channels × 10⁸ pixels/layer in 1 cm³ |
+| Parameter capacity | ~20–35B | ~90T raw / ~5-10% usable | Volumetric: 1,000 Z-layers × 900 Bragg channels × 10⁸ pixels/layer in 1 cm³ |
 | Latency | ~7–10 ms | ~50–200 ps (1–4 cm path) | Time-of-flight: τ = L·n/c, n = 1.5 |
 | Energy per forward pass | order of mJ | order of pJ–fJ | Optical ops displace DRAM-bandwidth-bound matmul |
 | Throughput | 100–150 TPS | 7.5M–375M TPS (projected) | Time-of-flight with 50–100× overhead correction |
