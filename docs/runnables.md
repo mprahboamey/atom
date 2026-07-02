@@ -10,9 +10,9 @@ These modules are imported by examples and tests. They are not meant to be run d
 
 | Path | Purpose |
 |---|---|
-| `optic/propagation.py` | Complex field helpers and Angular Spectrum Method propagation |
-| `optic/diffractive.py` | Trainable phase masks and stacked diffractive network |
-| `optic/attention.py` | Interference-based attention score computation |
+| `atom/propagation.py` | Complex field helpers and Angular Spectrum Method propagation |
+| `atom/diffractive.py` | Trainable phase masks and stacked diffractive network |
+| `atom/attention.py` | Interference-based attention score computation |
 
 ---
 
