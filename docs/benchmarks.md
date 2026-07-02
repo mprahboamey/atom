@@ -52,7 +52,7 @@ Conservative estimates:
 |----------|----------|
 | Raw geometric maximum | 90T |
 | 50% reserved for error correction and redundancy | 45T |
-| Practical (accounting for multiplexing crosstalk) | 14T–20T |
+| Practical (accounting for multiplexing crosstalk) | 4.5T- 9T |
 
 For comparison, the NVIDIA H100 SXM stores 20–35B parameters in FP16 across 80–141 GB of HBM. The projected density advantage at the reference configuration is:
 
