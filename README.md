@@ -1,3 +1,4 @@
+![tests](https://github.com/mprahboamey/atom/actions/workflows/tests.yml/badge.svg)
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
