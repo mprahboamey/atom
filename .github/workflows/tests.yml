@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install numpy matplotlib
+          pip install numpy matplotlib pytest
           pip install -e .
 
       - name: Run validation
