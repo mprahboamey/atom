@@ -38,7 +38,7 @@ This is a geometric ceiling — the storage capacity of the medium before any da
 |----------|----------|-------|
 | Geometric ceiling | 90T | Pure math, no physical losses |
 | 50% error correction allocation | 45T | Half reserved for redundancy |
-| Realistic (SNR + crosstalk degradation) | 4.5T – 9T | 5–10% of ceiling under real multiplexing conditions |
+| Realistic (SNR + crosstalk degradation) | 4.5T – 9T (for reference, GPT 4 is 1.8T params| 5–10% of ceiling under real multiplexing conditions |
 | NVIDIA H100 (for reference) | 20–35B | Measured hardware |
 
 The 5–10% realistic figure is where the engineering gets hard. It's also where most of the interesting open problems live. For the full derivation of every number in this table — assumptions, sources, and what's measured vs projected — see [`docs/benchmarks.md`](docs/benchmarks.md).
