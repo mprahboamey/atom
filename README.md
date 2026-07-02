@@ -67,7 +67,17 @@ The last row is intentional. Accuracy claims require a noise model, a task bench
 ```bash
 git clone https://github.com/mprahboamey/atom.git
 cd atom
-pip install -r requirements.txt
+pip install -e .
+```
+
+If you don't have PyTorch yet:
+```bash
+pip install "atom-optic[torch]"
+```
+
+If you want everything in one shot:
+```bash
+pip install "atom-optic[full]"
 ```
 
 Run everything and see all validation results:
