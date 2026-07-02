@@ -8,6 +8,6 @@
 
 ## Reporting a Vulnerability
 
-If you find a security issue, open a private GitHub issue or email the maintainer directly.
+Use GitHub's private vulnerability reporting feature (Security tab → "Report a vulnerability") to report issues without public disclosure.
 
 ATOM is a research simulator with no network calls, no data collection, and no external API dependencies beyond PyTorch, NumPy, and Matplotlib. The attack surface is approximately the size of a holographic crystal — which is to say, very small, and largely theoretical.
