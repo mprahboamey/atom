@@ -4,7 +4,7 @@ import unittest
 import torch
 from torch.nn import functional as F
 
-from optic import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
+from atom import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
 
 
 class MathStressTests(unittest.TestCase):

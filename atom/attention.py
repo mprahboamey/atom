@@ -21,7 +21,7 @@ def optical_scores(
     key: torch.Tensor,
     normalize: bool = False,
 ) -> torch.Tensor:
-    """Return attention scores from optical interference.
+    """Return attention scores from atomal interference.
 
     Input shape is `(..., sequence, features)`. The result shape is
     `(..., query_sequence, key_sequence)`.

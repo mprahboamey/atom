@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from optic import WavePropagator, gaussian_field, intensity
+from atom import WavePropagator, gaussian_field, intensity
 
 
 def main() -> None:

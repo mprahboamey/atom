@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from optic import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
+from atom import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
 
 
 class CoreTests(unittest.TestCase):

@@ -5,7 +5,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import torch
 
-from optic import DiffractiveLayer, WavePropagator, intensity
+from atom import DiffractiveLayer, WavePropagator, intensity
 
 
 def main() -> None:

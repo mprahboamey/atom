@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import torch
 from torch.nn import functional as F
 
-from optic import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
+from atom import DiffractiveLayer, WavePropagator, gaussian_field, intensity, optical_scores
 
 
 def assert_close(name: str, value: float, limit: float) -> None:
