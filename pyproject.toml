@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atom-optic"
-version = "0.1.1"
+version = "0.1.2"
 description = "Numerically verified simulation of transformer attention via optical wave interference in holographic crystals"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Mprah-Boamey"}]
+authors = [{ name = "Mprah-Boamey" }]
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.21",
@@ -24,10 +24,14 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 
+[project.optional-dependencies]
+torch = ["torch>=1.13"]
+full = ["torch>=1.13", "numpy>=1.21", "matplotlib>=3.5"]
+
 [project.urls]
 Homepage = "https://github.com/mprahboamey/atom"
 Repository = "https://github.com/mprahboamey/atom"
- "Bug Tracker" = "https://github.com/mprahboamey/atom/issues"
+"Bug Tracker" = "https://github.com/mprahboamey/atom/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
