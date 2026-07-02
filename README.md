@@ -1,9 +1,9 @@
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
-What if a neural network's weights didn't exist as floating points in memory but in holograms ?
+What if a neural network's weights didn't exist as floating points in memory but in holograms?
 
-This repo is a numerically verified simulation showing that AI weights (which are floating points), encoded as phase structure inside a holographic crystal, can perform transformer attention exactly through wave interference. Not approximately. ALgebraically equal to. Verified in code you can run in one command.
+This repo is a numerically verified simulation showing that AI weights, encoded as phase structure inside a holographic crystal, can perform transformer attention exactly through wave interference. Not approximately. Algebraically identical to. Verified in code you can run in one command.
 
 The math is proved. The hardware doesn't exist yet. That's the point of open sourcing this.
 
@@ -15,9 +15,11 @@ A standard transformer spends most of its energy moving weights from memory to c
 
 This project asks: what if the weights *were* the computer?
 
-A photorefractive crystal stores holograms through its entire volume using Bragg angle selectivity, write a pattern at a specific angle, and only light arriving at that exact angle reads it back. Change the angle by a fraction of a degree and you're reading a completely different stored pattern. This is angular multiplexing: hundreds of independent weight matrices living in the same cubic centimetre of crystal, each addressed by angle.
+A photorefractive crystal stores holograms through its entire volume using Bragg angle selectivity — write a pattern at a specific angle, and only light arriving at that exact angle reads it back. Change the angle by a fraction of a degree and you're reading a completely different stored pattern. This is angular multiplexing: hundreds of independent weight matrices living in the same cubic centimetre of crystal, each addressed by angle.
 
 The ATOM simulator models this in PyTorch. It proves that when query and key vectors are encoded as optical wave amplitudes and interfere inside such a crystal, the output is algebraically identical to scaled dot-product attention. The computation happens through physics — diffraction and interference — not digital arithmetic.
+
+For the full mathematical derivation of how the proof works, see [`docs/model.md`](docs/model.md).
 
 ---
 
@@ -29,7 +31,7 @@ A 1 cm³ crystal at reference parameters holds:
 1,000 depth layers × 900 angular channels × 100M pixels/layer = 90 trillion addressable weight values
 ```
 
-This is a geometric ceiling — the storage capacity of the medium before any data is written, like saying a hard drive holds 2 TB before downloading anything. Here's the honest range of what's usable:
+This is a geometric ceiling — the storage capacity of the medium before any data is written, like saying a hard drive holds 2 TB before formatting. Here's the honest range of what's usable:
 
 | Scenario | Capacity | Notes |
 |----------|----------|-------|
@@ -38,7 +40,7 @@ This is a geometric ceiling — the storage capacity of the medium before any da
 | Realistic (SNR + crosstalk degradation) | 4.5T – 9T | 5–10% of ceiling under real multiplexing conditions |
 | NVIDIA H100 (for reference) | 20–35B | Measured hardware |
 
-The 5–10% realistic figure is where the engineering gets hard. It's also where most of the interesting open problems live.
+The 5–10% realistic figure is where the engineering gets hard. It's also where most of the interesting open problems live. For the full derivation of every number in this table — assumptions, sources, and what's measured vs projected — see [`docs/benchmarks.md`](docs/benchmarks.md).
 
 ---
 
@@ -74,7 +76,7 @@ Run everything and see all validation results:
 python scripts/run_all.py
 ```
 
-Or run individual examples in order:
+Or step through the concepts in order:
 
 ```bash
 python examples/01_propagate_beam.py      # Gaussian beam through free space
@@ -89,18 +91,19 @@ python examples/04_validate_model.py      # all numerical checks with tolerances
 
 ```
 atom/                        ← core library
-├── propagation.py           ← Angular Spectrum Method, Gaussian beam helpers
-├── diffractive.py           ← trainable phase masks, stacked diffractive network
+├── propagation.py           ← Angular Spectrum Method, field helpers
+├── diffractive.py           ← trainable phase masks, diffractive network
 └── attention.py             ← interference-based attention scores
 
 examples/                    ← one concept per script, run in order
-docs/
-├── model.md                 ← full mathematical derivation
-└── benchmarks.md            ← every projection with assumptions stated
-scripts/run_all.py           ← runs everything
+scripts/run_all.py           ← runs everything, writes results/
 tests/                       ← unit tests
 results/                     ← validation output (generated at runtime)
 figures/                     ← plots from simulation
+
+docs/
+├── model.md                 ← full mathematical derivation of the proof
+└── benchmarks.md            ← every projection with full assumptions and sources
 ```
 
 ---
@@ -109,7 +112,7 @@ figures/                     ← plots from simulation
 
 The math is done. The simulator works. What doesn't exist yet is everything physical — and that's what this repo is for. See [CONTRIBUTING.md](CONTRIBUTING.md) for specific open problems by domain.
 
-The short version: building a real device requires solving noise, materials, readout, and system integration problems that this codebase deliberately does not claim to have solved. If you work in any of those areas, there is a concrete problem in CONTRIBUTING.md with your name on it.
+Building a real device requires solving noise, materials, readout, and system integration problems that this codebase deliberately does not claim to have solved. If you work in any of those areas, there is a concrete problem in CONTRIBUTING.md with your name on it.
 
 ---
 
