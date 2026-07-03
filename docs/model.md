@@ -86,12 +86,14 @@ Because `theta` is differentiable, a loss computed from the output intensity bac
 
 The attention module addresses a specific question: when weights are encoded as phase masks and inputs are encoded as optical fields, does the resulting interference produce the same scores as scaled dot-product attention?
 
-The encoding is straightforward:
+The base encoding is deliberately minimal:
 
 - positive values → complex amplitude with phase 0
 - negative values → complex amplitude with phase π
 
-This preserves sign in the phase of the wave. The interference score between a query wave and a key wave is then:
+This is a binary phase encoding, and that's not incidental — it's the *only* phase choice for which `Re(q_wave · conj(k_wave))` recovers `q · k` exactly, term for term. Exact recovery requires `cos(θ_q − θ_k) = sign(q · k)`, and cosine only equals ±1 at 0 and π. So the base proof below is intentionally the degenerate case of interference, chosen to make the equivalence to standard attention exact rather than approximate. It is not, by itself, a demonstration that continuous phase is doing anything — see "Continuous phase" below for that.
+
+The interference score between a query wave and a key wave is then:
 
 ```
 score = Re( Σ q_wave · conj(k_wave) ) / √d
@@ -108,6 +110,10 @@ The validation script confirms both expressions produce the same values to float
 Sign preservation is also verified explicitly: a query vector and its negation produce an anti-correlation score of exactly −1.000, confirming that semantic opposition is correctly encoded and recovered through the optical path.
 
 This result is the numerical foundation for the architecture projections. If the interference mechanism correctly computes attention, then a physical device running this interference on real light fields performs transformer attention — with the weights stored in the holographic medium and the computation happening at the speed of light through the crystal volume.
+
+### Continuous phase
+
+`encode_angular_phase` and `optical_scores_general` (`atom/attention.py`) generalize the base encoding: each token accumulates a continuous phase offset from its angular position — modeling angular multiplexing, where sequence positions are addressed at distinct Bragg angles inside the crystal, the same construction rotary position embeddings use for sequence index. With query and key positions equal, the relative phase cancels and this reduces exactly to the binary case above. With distinct query/key positions it does not reduce to a plain dot product — scores become sensitive to relative angular offset, which is the actual interference effect binary phase can't produce. This is a strict superset of the base proof, not a replacement for it: the exact-equivalence result above still holds as the zero-offset special case.
 
 ---
 

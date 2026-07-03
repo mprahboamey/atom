@@ -2,7 +2,13 @@
 
 from .propagation import WavePropagator, gaussian_field, intensity
 from .diffractive import DiffractiveLayer, DiffractiveNetwork
-from .attention import optical_scores, OpticalSelfAttention
+from .attention import (
+    optical_scores,
+    optical_scores_general,
+    encode_signed_values,
+    encode_angular_phase,
+    OpticalSelfAttention,
+)
 
 __all__ = [
     "WavePropagator",
@@ -11,5 +17,8 @@ __all__ = [
     "DiffractiveLayer",
     "DiffractiveNetwork",
     "optical_scores",
+    "optical_scores_general",
+    "encode_signed_values",
+    "encode_angular_phase",
     "OpticalSelfAttention",
 ]
