@@ -8,6 +8,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .noise import quantize_phase
+
 
 def encode_signed_values(values: torch.Tensor) -> torch.Tensor:
     """Encode real values as complex wave amplitudes with sign in phase.
@@ -34,6 +36,7 @@ def encode_angular_phase(
     values: torch.Tensor,
     positions: torch.Tensor,
     base: float = 10000.0,
+    phase_bits: int | None = None,
 ) -> torch.Tensor:
     """Encode values as waves with a genuine continuous phase.
 
@@ -44,6 +47,12 @@ def encode_angular_phase(
     the crystal. This is the same construction as rotary position
     embeddings, applied here as an optical angle rather than an
     abstract index.
+
+    `phase_bits`, if given, quantizes the resulting phase to that many
+    bits before encoding -- models a real SLM/crystal that can only
+    address `2**phase_bits` discrete phase levels, instead of an
+    idealized continuous angle. `None` (default) keeps phase exact,
+    matching the ideal theoretical case tested elsewhere.
 
     IMPORTANT: this phase only produces genuine interference when
     query and key tokens carry *different* positions -- if both sides
@@ -64,7 +73,10 @@ def encode_angular_phase(
     freq_index = torch.arange(dim, device=values.device, dtype=values.dtype)
     freq = base ** (-freq_index / dim)
     angular_phase = positions.unsqueeze(-1) * freq
-    return amplitude * torch.exp(1j * (sign_phase + angular_phase))
+    total_phase = sign_phase + angular_phase
+    if phase_bits is not None:
+        total_phase = quantize_phase(total_phase, phase_bits)
+    return amplitude * torch.exp(1j * total_phase)
 
 
 def optical_scores(
@@ -105,6 +117,7 @@ def optical_scores_general(
     query_positions: torch.Tensor | None = None,
     key_positions: torch.Tensor | None = None,
     normalize: bool = False,
+    phase_bits: int | None = None,
 ) -> torch.Tensor:
     """Attention scores from interference with genuine continuous phase.
 
@@ -117,6 +130,12 @@ def optical_scores_general(
     interfering -- scores become sensitive to relative positional
     offset in a way a plain dot product structurally cannot be, which
     is the actual interference effect the binary case was missing.
+
+    `phase_bits`, if given, quantizes phase to that many bits during
+    encoding -- models finite SLM/crystal write precision instead of
+    an idealized continuous angle. Only applies when position args
+    are given; the plain binary case (`encode_signed_values`) is
+    already exactly two phase levels by construction.
 
     Query and key positions must differ for the effect to show up:
     identical positions on both sides cancel in
@@ -138,8 +157,8 @@ def optical_scores_general(
             query_positions = torch.zeros(query.shape[:-1], device=query.device, dtype=query.dtype)
         if key_positions is None:
             key_positions = torch.zeros(key.shape[:-1], device=key.device, dtype=key.dtype)
-        q_wave = encode_angular_phase(query, query_positions)
-        k_wave = encode_angular_phase(key, key_positions)
+        q_wave = encode_angular_phase(query, query_positions, phase_bits=phase_bits)
+        k_wave = encode_angular_phase(key, key_positions, phase_bits=phase_bits)
 
     scores = torch.einsum("...qd,...kd->...qk", q_wave, torch.conj(k_wave)).real
     return scores / scale
