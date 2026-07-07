@@ -1,47 +1,55 @@
 {
   "passed": true,
-  "python": "3.14.5",
-  "platform": "Linux-7.0.11-200.fc44.x86_64-x86_64-with-glibc2.43",
-  "torch": "2.12.0+cpu",
+  "python": "3.12.3",
+  "platform": "Linux-6.18.5-x86_64-with-glibc2.39",
+  "torch": "2.12.1+cu130",
   "runs": [
     {
       "name": "example_01_propagate_beam",
       "kind": "example",
-      "command": "/usr/bin/python examples/01_propagate_beam.py",
+      "command": "/usr/bin/python3 examples/01_propagate_beam.py",
       "returncode": 0,
-      "duration_seconds": 1.359,
+      "duration_seconds": 1.655,
       "log": "results/logs/example_01_propagate_beam.txt"
     },
     {
       "name": "example_02_train_phase_mask",
       "kind": "example",
-      "command": "/usr/bin/python examples/02_train_phase_mask.py",
+      "command": "/usr/bin/python3 examples/02_train_phase_mask.py",
       "returncode": 0,
-      "duration_seconds": 2.0696,
+      "duration_seconds": 2.9348,
       "log": "results/logs/example_02_train_phase_mask.txt"
     },
     {
       "name": "example_03_optical_attention",
       "kind": "example",
-      "command": "/usr/bin/python examples/03_optical_attention.py",
+      "command": "/usr/bin/python3 examples/03_optical_attention.py",
       "returncode": 0,
-      "duration_seconds": 1.2056,
+      "duration_seconds": 1.749,
       "log": "results/logs/example_03_optical_attention.txt"
     },
     {
       "name": "example_04_validate_model",
       "kind": "validation",
-      "command": "/usr/bin/python examples/04_validate_model.py",
+      "command": "/usr/bin/python3 examples/04_validate_model.py",
       "returncode": 0,
-      "duration_seconds": 1.226,
+      "duration_seconds": 1.781,
       "log": "results/logs/example_04_validate_model.txt"
+    },
+    {
+      "name": "example_05_phase_quantization_sweep",
+      "kind": "example",
+      "command": "/usr/bin/python3 examples/05_phase_quantization_sweep.py",
+      "returncode": 0,
+      "duration_seconds": 1.971,
+      "log": "results/logs/example_05_phase_quantization_sweep.txt"
     },
     {
       "name": "unit_tests",
       "kind": "test",
-      "command": "/usr/bin/python -m unittest discover tests",
+      "command": "/usr/bin/python3 -m unittest discover tests",
       "returncode": 0,
-      "duration_seconds": 1.3583,
+      "duration_seconds": 1.7252,
       "log": "results/logs/unit_tests.txt"
     }
   ]

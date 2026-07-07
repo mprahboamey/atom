@@ -40,6 +40,11 @@ COMMANDS = [
         "command": [sys.executable, "examples/04_validate_model.py"],
     },
     {
+        "name": "example_05_phase_quantization_sweep",
+        "kind": "example",
+        "command": [sys.executable, "examples/05_phase_quantization_sweep.py"],
+    },
+    {
         "name": "unit_tests",
         "kind": "test",
         "command": [sys.executable, "-m", "unittest", "discover", "tests"],

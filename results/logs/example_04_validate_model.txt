@@ -8,21 +8,21 @@ size=16 distance=0.01: 2.143e-07  limit=2.0e-05
 size=32 distance=0: 0.000e+00  limit=2.0e-05
 size=32 distance=1e-06: 1.532e-07  limit=2.0e-05
 size=32 distance=0.0001: 0.000e+00  limit=2.0e-05
-size=32 distance=0.001: 1.532e-07  limit=2.0e-05
-size=32 distance=0.01: 7.662e-08  limit=2.0e-05
+size=32 distance=0.001: 0.000e+00  limit=2.0e-05
+size=32 distance=0.01: 0.000e+00  limit=2.0e-05
 size=64 distance=0: 1.518e-07  limit=2.0e-05
 size=64 distance=1e-06: 1.518e-07  limit=2.0e-05
 size=64 distance=0.0001: 7.589e-08  limit=2.0e-05
 size=64 distance=0.001: 7.589e-08  limit=2.0e-05
 size=64 distance=0.01: 7.589e-08  limit=2.0e-05
-size=128 distance=0: 0.000e+00  limit=2.0e-05
-size=128 distance=1e-06: 1.518e-07  limit=2.0e-05
+size=128 distance=0: 2.277e-07  limit=2.0e-05
+size=128 distance=1e-06: 2.277e-07  limit=2.0e-05
 size=128 distance=0.0001: 1.518e-07  limit=2.0e-05
-size=128 distance=0.001: 7.589e-08  limit=2.0e-05
-size=128 distance=0.01: 1.518e-07  limit=2.0e-05
+size=128 distance=0.001: 1.518e-07  limit=2.0e-05
+size=128 distance=0.01: 2.277e-07  limit=2.0e-05
 
 2. Forward/backward propagation round trip
-round-trip relative field error: 2.804e-07  limit=3.0e-05
+round-trip relative field error: 2.761e-07  limit=3.0e-05
 
 3. Phase mask preserves intensity
 max intensity difference: 1.907e-06  limit=2.0e-05
