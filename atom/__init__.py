@@ -23,6 +23,12 @@ from .capacity import (
     usable_capacity,
     capacity_summary,
 )
+from .hybrid import (
+    HybridOpticalAttention,
+    AccountingReport,
+    optical_time_of_flight,
+    estimate_digital_flops,
+)
 
 __all__ = [
     "WavePropagator",
@@ -45,4 +51,8 @@ __all__ = [
     "geometric_capacity",
     "usable_capacity",
     "capacity_summary",
+    "HybridOpticalAttention",
+    "AccountingReport",
+    "optical_time_of_flight",
+    "estimate_digital_flops",
 ]
