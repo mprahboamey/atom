@@ -1,9 +1,14 @@
 """Convert attention weights to optical phase encodings.
 
-Without --model: runs on a small synthetic Llama-style state dict (CI-safe).
-With --model /path/to/checkpoint: loads your local weights (safetensors or .pt).
+Supports local checkpoints in any of:
+  - Hugging Face / safetensors folder or file
+  - PyTorch .pt / .bin state dict
+  - GGUF (llama.cpp), including Q4_K_M and similar quants
 
+Without --model: synthetic Llama-style state dict (CI-safe).
 Default phase_bits=8 matches the quantisation sweep knee.
+
+GGUF requires: pip install gguf
 """
 
 from __future__ import annotations
@@ -19,7 +24,7 @@ import torch
 from atom.convert import convert_checkpoint, convert_state_dict, save_conversion
 
 
-def synthetic_state() -> dict[str, torch.Tensor]:
+def synthetic_state() -> dict:
     torch.manual_seed(0)
     d = 64
     return {
@@ -37,7 +42,7 @@ def main() -> None:
         "--model",
         type=str,
         default=None,
-        help="Path to local checkpoint file or directory (safetensors / .pt)",
+        help="Path to local checkpoint (safetensors dir/file, .pt, or .gguf)",
     )
     p.add_argument("--out", type=str, default="optical_weights_out")
     p.add_argument("--phase-bits", type=int, default=8)
@@ -50,6 +55,7 @@ def main() -> None:
         print("No --model given; using synthetic Llama-style weights")
         result = convert_state_dict(synthetic_state(), phase_bits=args.phase_bits)
 
+    print(f"format    : {result.meta.get('format', 'state_dict')}")
     print(f"Converted {result.meta['n_converted']} tensors")
     print(f"Skipped   {result.meta['n_skipped']} non-attention keys")
     print(f"phase_bits={result.meta['phase_bits']}")

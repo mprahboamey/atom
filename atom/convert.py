@@ -1,11 +1,14 @@
 """Convert digital attention weights into optical phase encodings.
 
-Loads a local checkpoint (PyTorch state dict or safetensors directory) and
-maps attention projection matrices into the amplitude/phase representation
-used by the optical score path. Default phase quantisation is 8 bits, matching
-the knee in examples/05_phase_quantization_sweep.py.
+Loads a local checkpoint and maps attention projection matrices into the
+amplitude/phase representation used by the optical score path.
 
-This module does not download models. Point it at weights already on disk.
+Supported inputs (same convert_checkpoint entry point):
+  - Hugging Face / safetensors directory or file
+  - PyTorch .pt / .bin state dict
+  - GGUF file (llama.cpp), including quantized types such as Q4_K_M
+
+Default phase quantisation is 8 bits. This module does not download models.
 """
 
 from __future__ import annotations
@@ -15,14 +18,12 @@ import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import torch
 
 from .noise import quantize_phase
 
-# Common attention projection name patterns (HF / GPT-2 / Llama-style)
-# Note: fused GPT-2 c_attn is handled separately and must not match q_proj.
+# HF / GPT-2 / Llama-style names
 _Q_PATTERNS = re.compile(
     r"(?:^|[.])(?:q_proj|query|q_lin|to_q)$", re.IGNORECASE
 )
@@ -35,6 +36,12 @@ _V_PATTERNS = re.compile(
 _O_PATTERNS = re.compile(
     r"(?:^|[.])(?:o_proj|out_proj|c_proj|to_out\.0)$", re.IGNORECASE
 )
+
+# llama.cpp GGUF tensor names -> synthetic HF-style keys
+_GGUF_ATTN = re.compile(
+    r"^blk\.(\d+)\.attn_(q|k|v|output)\.weight$"
+)
+_GGUF_KIND = {"q": "q_proj", "k": "k_proj", "v": "v_proj", "output": "o_proj"}
 
 
 @dataclass
@@ -75,15 +82,76 @@ def encode_weight_matrix(
 
 
 def _torch_load(path: str):
-    """Load a pickle checkpoint; weights_only when supported."""
     try:
         return torch.load(path, map_location="cpu", weights_only=True)
     except TypeError:
         return torch.load(path, map_location="cpu")
 
 
+def _gguf_tensor_to_torch(tensor) -> torch.Tensor:
+    """Dequantize a GGUF ReaderTensor to float32 torch.Tensor."""
+    import numpy as np
+    import gguf
+
+    data = tensor.data
+    ttype = tensor.tensor_type
+    # F32 / F16 often already usable; other types need dequantize
+    try:
+        from gguf import GGMLQuantizationType
+
+        if ttype in (GGMLQuantizationType.F32, GGMLQuantizationType.F16):
+            arr = np.asarray(data).astype(np.float32, copy=False)
+        else:
+            arr = np.asarray(gguf.dequantize(data, ttype), dtype=np.float32)
+    except Exception:
+        arr = np.asarray(gguf.dequantize(data, ttype), dtype=np.float32)
+
+    # GGUF stores shapes in reverse order relative to PyTorch convention
+    shape = tuple(int(s) for s in reversed(list(tensor.shape)))
+    if arr.size != int(np.prod(shape)):
+        # Fall back to flat dequant size if reshape is ambiguous
+        return torch.from_numpy(np.ascontiguousarray(arr))
+    return torch.from_numpy(np.ascontiguousarray(arr.reshape(shape)))
+
+
+def _load_gguf(path: Path) -> dict:
+    """Load attention weights from a GGUF file into a state-dict-like mapping.
+
+    Requires: pip install gguf
+    Quantized tensors (e.g. Q4_K_M) are dequantized to float32.
+    """
+    try:
+        import gguf
+    except ImportError as e:
+        raise ImportError(
+            "Reading GGUF requires the gguf package. Install with: pip install gguf"
+        ) from e
+
+    reader = gguf.GGUFReader(str(path))
+    out = {}
+    for tensor in reader.tensors:
+        name = tensor.name
+        m = _GGUF_ATTN.match(name)
+        if not m:
+            continue
+        layer_idx, kind = m.group(1), m.group(2)
+        hf_name = (
+            f"model.layers.{layer_idx}.self_attn.{_GGUF_KIND[kind]}.weight"
+        )
+        out[hf_name] = _gguf_tensor_to_torch(tensor)
+    if not out:
+        raise ValueError(
+            f"No attention tensors found in GGUF file {path}. "
+            "Expected names like blk.N.attn_q.weight"
+        )
+    return out
+
+
 def _load_state_dict(path: Path) -> dict:
     path = Path(path)
+    if path.is_file() and path.suffix.lower() == ".gguf":
+        return _load_gguf(path)
+
     if path.is_file():
         if path.suffix == ".safetensors":
             try:
@@ -122,6 +190,14 @@ def _load_state_dict(path: Path) -> dict:
                 out.update({k: v for k, v in part.items() if torch.is_tensor(v)})
         return out
 
+    ggufs = list(path.glob("*.gguf"))
+    if len(ggufs) == 1:
+        return _load_gguf(ggufs[0])
+    if len(ggufs) > 1:
+        raise ValueError(
+            f"Multiple GGUF files under {path}; pass a single file path instead"
+        )
+
     raise FileNotFoundError(f"No weights found under {path}")
 
 
@@ -129,7 +205,6 @@ def _classify_key(key: str) -> str | None:
     k = key
     if k.endswith(".weight"):
         k = k[: -len(".weight")]
-    # Fused GPT-2 style must be checked before generic q/k/v patterns
     if k.endswith("c_attn") or k.endswith(".attn.c_attn"):
         return "c_attn"
     if _O_PATTERNS.search(k):
@@ -209,11 +284,16 @@ def convert_checkpoint(
     phase_bits: int | None = 8,
     include_output_proj: bool = True,
 ) -> ConversionResult:
-    """Load a local checkpoint and convert attention weights."""
+    """Load a local checkpoint (safetensors, PyTorch, or GGUF) and convert."""
     state = _load_state_dict(Path(path))
-    return convert_state_dict(
+    result = convert_state_dict(
         state, phase_bits=phase_bits, include_output_proj=include_output_proj
     )
+    result.meta["source"] = str(path)
+    result.meta["format"] = (
+        "gguf" if str(path).lower().endswith(".gguf") else "torch_or_safetensors"
+    )
+    return result
 
 
 def save_conversion(result: ConversionResult, out_dir) -> None:
