@@ -1,42 +1,41 @@
-# Evidence status (software path)
+# Evidence status
 
-This page lists what has been measured in software. Nothing here is a hardware measurement.
+Software measurements only. No physical optical hardware results are claimed.
 
-## Proven / measured
+## Measured
 
-| Claim | Evidence |
-|-------|----------|
-| Binary-phase optical scores = scaled dot-product | Unit tests + `examples/04_validate_model.py` |
-| Noise hooks (phase quant, phase noise, jitter, crosstalk) | `atom/noise.py`, tests |
-| M#-aware capacity (Fe:LiNbO₃ defaults) | `atom/capacity.py` |
-| Hybrid module (optical scores + digital remainder) | `atom/hybrid.py` |
-| GGUF / safetensors / PyTorch → optical weight encode | `atom/convert.py` |
-| Real Mistral-7B Q4_K_M attention weights converted | Local run: 128 tensors |
-| Layer-0 optical vs digital scores on those weights | MSE ~1e-15, top-1 100% (`examples/09`) |
-| All-layer score audit | `examples/10_all_layer_audit.py` |
-| Phase-bit / noise sweep on real layer | `examples/11_phase_noise_sweep.py` |
-| Hybrid **block output** parity (GQA) | `atom/hybrid_block.py`, `examples/12_hybrid_block_parity.py` |
-| Structural multi-layer token loop (toy lm head) | `examples/13_minimal_hybrid_generate.py` |
+| Item | Result |
+|------|--------|
+| Binary-phase optical scores = scaled dot-product | Float agreement (unit tests, validate script) |
+| Continuous-phase path, noise hooks, M# capacity, hybrid module | Implemented and tested |
+| GGUF / safetensors / PyTorch → phase-encoded attention weights | `atom/convert.py` |
+| Mistral-7B-Instruct Q4_K_M: 128 attention tensors converted | Local conversion run |
+| Optical vs digital **scores**, all 32 layers | MSE ~1e-16, top-1 100% every layer (`examples/10`) |
+| Hybrid **attention block** output vs digital (GQA) | MSE ~1e-18 on layer 0 (`examples/12`) |
+| Full GGUF hybrid forward (embed + all layers + MLP + lm_head) | `atom/gguf_model.py`, `examples/14_hybrid_generate_mistral.py` |
+
+## Generate path
+
+`examples/14_hybrid_generate_mistral.py` loads **all** required tensors from the same GGUF used for attention conversion. Optical path is used only for attention scores; remaining ops are digital on dequantized checkpoint weights. Optional `--compare-digital` checks whether greedy token sequences match when scores are computed digitally instead.
+
+Token **text** decoding requires a tokenizer (e.g. Hugging Face `Mistral-7B-Instruct-v0.2` tokenizer) applied offline to the printed token ids. The generate script itself prints token ids.
 
 ## Not claimed
 
-- Full-quality chat or benchmark scores
-- MLP / embed / lm_head loaded from GGUF in the generate demo
-- Physical Fe:LiNbO₃ device or FPGA measurements
-- Energy / latency of a real optical system
+- Physical Fe:LiNbO₃ or FPGA measurements
+- Benchmark leaderboard scores
+- Bit-identical long generations under every noise setting
+- That Q4 dequantization equals an FP16 safetensors run
 
-## How to reproduce (local weights only)
+## Reproduce (local model file only — do not commit weights)
 
 ```bash
-# after convert to ./optical_weights_mistral7b
 python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
-python examples/11_phase_noise_sweep.py --weights ./optical_weights_mistral7b --layer 0
 python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
-python examples/13_minimal_hybrid_generate.py --weights ./optical_weights_mistral7b
+python examples/14_hybrid_generate_mistral.py \
+  --gguf /path/to/mistral-7b-instruct-v0.2.Q4_K_M.gguf \
+  --max-new 8 \
+  --compare-digital
 ```
 
-Do not commit GGUF files or `optical_weights_*` directories to git.
-
-## Fundable narrative (bounded)
-
-Software verifies that attention scores for a real 7B model’s weight matrices can be computed via the optical interference formulation at float agreement when noise is off, and that a hybrid attention **block** (GQA) matches digital block outputs on those weights. Remaining work is systems integration (full weights in generate, FPGA kernel, materials), not the score identity itself.
+Use `--max-layers 2` first if RAM is tight.

@@ -2,116 +2,92 @@
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
-What if a neural network's weights didn't exist as floating points in memory but as phase structure in a holographic crystal?
+Software research stack for transformer **attention scores** computed via the same algebra as optical wave interference (phase-encoded Q/K), with a hybrid path for real checkpoints.
 
-This repo is a numerically verified simulation of that idea. The core result: when query and key vectors are encoded as optical waves with binary phase (0 or π), their interference scores are **algebraically identical** to scaled dot-product attention — term for term, verified to float precision on arbitrary tensors. A continuous-phase generalization (angular multiplexing) is also implemented and reduces to that exact case when relative positions are zero.
+Core result: with binary phase (0 or π), interference scores are algebraically identical to scaled dot-product attention, verified to float precision. Continuous-phase encoding, noise models, M#-aware capacity (Fe:LiNbO₃ defaults), weight conversion (safetensors / PyTorch / GGUF), and hybrid inference on full GGUF weights are implemented in this repo.
 
-What is optical is the **score matrix**. Softmax, value aggregation, residuals, and norms stay digital. The practical block is hybrid: optical scores + digital remainder. See [`atom/hybrid.py`](atom/hybrid.py).
-
-The math for the scores is proved. The hardware does not exist yet. That is the point of open sourcing this.
+The optical step is the **score matrix**. Softmax, values, MLP, norms, and the lm_head stay digital. Hardware (photorefractive crystal, FPGA) is future work — not claimed as built.
 
 ---
 
-## What is proved vs what is projected
+## Status
 
-| Claim | Status |
-|-------|--------|
-| Optical interference = scaled dot-product **scores** (binary phase, exact) | Proved and verified to float precision |
-| Continuous-phase path reduces to the above when positions match | Verified |
-| ASM energy conservation, phase-mask intensity, reversible propagation | Verified |
-| Gradients flow through the optical score path | Verified |
-| Phase quantisation, phase noise, angular jitter, crosstalk models | Implemented (`atom/noise.py`) |
-| M#-limited capacity for Fe:LiNbO₃ | Implemented (`atom/capacity.py`); geometric 90T is an upper bound only |
-| Hybrid optical-QK + digital remainder module | Implemented (`atom/hybrid.py`) |
-| Weight conversion from a local checkpoint | Implemented (`atom/convert.py`); you supply the model on disk |
-| Full-model optical inference (everything optical) | **Not claimed** |
-| Task accuracy on a real benchmark under noise | **Not claimed yet** — needs a real checkpoint + eval run |
-| Measured hardware latency / energy | **Not claimed** |
+| Area | Status |
+|------|--------|
+| Optical scores = digital scores (binary phase) | Verified |
+| Noise model (phase quant, phase noise, jitter, crosstalk) | Implemented |
+| M# capacity model (Fe:LiNbO₃ defaults) | Implemented |
+| Convert local HF / GGUF attention weights → phase encode | Implemented |
+| Mistral-7B Q4_K_M: all 32 layers score audit | Measured (MSE ~1e-16, top-1 100%) |
+| Hybrid attention block vs digital (GQA) | Measured |
+| Full GGUF hybrid generate (embed + layers + MLP + lm_head) | Implemented (`atom/gguf_model.py`) |
+| Physical crystal / FPGA | Not built |
+| Leaderboard task scores | Not claimed |
 
-The score equivalence does **not** require a trained model. It holds for any Q and K tensors. Task-level numbers require loading real weights and running the hybrid path under noise.
+Details: [`docs/evidence_status.md`](docs/evidence_status.md), [`docs/model.md`](docs/model.md), [`docs/benchmarks.md`](docs/benchmarks.md).
 
 ---
 
-## Capacity (honest version)
-
-Geometric ceiling under the simulation grid (1 cm³):
-
-```
-1,000 layers × 900 angular channels × 10⁸ pixels/layer = 9×10¹³  (90T)
-```
-
-That ignores dynamic range. Photorefractive media are limited by M#. For conservative Fe:LiNbO₃ parameters (M# ≈ 2, η_min ≈ 10⁻⁴) usable angular channels drop and the M#-aware estimate is lower (see `atom/capacity.py` and `docs/benchmarks.md`). Experimental net densities in the literature are lower still once scatter, coding, and readout are included.
-
-Multi-crystal / rack-scale composition (many modules, each holding part of a large model) is an open systems-engineering problem, not a materials claim. See CONTRIBUTING.md.
-
----
-
-## Phase precision
-
-A sweep over phase bit-width (`examples/05_phase_quantization_sweep.py`) shows that around **8 bits** attention KL vs continuous phase is already ~1e-5 and top-1 agreement is ~99.5% on synthetic Q/K. That is the default write precision used by the weight converter unless you override it.
-
----
-
-## Install and run
+## Install
 
 ```bash
 git clone https://github.com/mprahboamey/atom.git
 cd atom
 pip install -e .
+pip install torch gguf   # gguf needed for GGUF checkpoints
 ```
 
-```bash
-python scripts/run_all.py
-```
-
-```bash
-python examples/01_propagate_beam.py
-python examples/02_train_phase_mask.py
-python examples/03_optical_attention.py
-python examples/04_validate_model.py
-python examples/05_phase_quantization_sweep.py
-python examples/06_capacity_fe_linbo3.py
-python examples/07_hybrid_attention.py
-python examples/08_convert_weights.py   # synthetic demo; point at your local model for real weights
-```
+Do **not** commit multi-GB model files or `optical_weights_*` directories into git.
 
 ---
 
-## Project layout
+## Typical workflow (local Mistral GGUF)
+
+```bash
+# 1) Encode attention weights for audits / block tests
+python examples/08_convert_weights.py \
+  --model /path/to/model.Q4_K_M.gguf \
+  --out ./optical_weights_mistral7b \
+  --phase-bits 8
+
+# 2) All-layer score audit
+python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
+
+# 3) Hybrid block parity
+python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
+
+# 4) Full hybrid generate from the same GGUF (needs RAM)
+python examples/14_hybrid_generate_mistral.py \
+  --gguf /path/to/model.Q4_K_M.gguf \
+  --max-new 8 \
+  --compare-digital
+```
+
+Use `--max-layers 2` on example 14 if memory is limited while bringing the stack up.
+
+---
+
+## Layout
 
 ```
 atom/
-├── propagation.py    Angular Spectrum Method
-├── diffractive.py    Phase masks
-├── attention.py      Optical scores (binary + continuous phase)
-├── noise.py          Phase quant, phase noise, jitter, crosstalk
-├── capacity.py       M#-aware capacity (Fe:LiNbO₃ defaults)
-├── hybrid.py         Optical scores + digital remainder
-└── convert.py        Local checkpoint → optical weight tensors
-
-examples/             One concept per script
-tests/
-docs/model.md         Math derivation of the score proof
-docs/benchmarks.md    Capacity, latency, energy assumptions
+  attention.py      Optical score math
+  noise.py          Phase / angular / crosstalk noise
+  capacity.py       M#-aware capacity
+  convert.py        Checkpoint → phase-encoded attention weights
+  hybrid.py         Generic hybrid attention module
+  hybrid_block.py   Loaded hybrid attention from optical_weights.pt
+  gguf_model.py     Full GGUF hybrid Mistral/Llama forward + generate
+  optical_weights_io.py
+examples/           01–14 runnable scripts
+docs/               model, benchmarks, evidence_status
 ```
 
 ---
 
-## Loading your own model
+## Contributing
 
-Do not commit multi-GB weights into this repo. Download a model on your machine (e.g. Midnight Bundle or any HF/safetensors folder), then:
-
-```bash
-python examples/08_convert_weights.py --model /path/to/model --out ./optical_weights
-```
-
-The converter maps attention projections into phase-encoded tensors (default 8-bit phase). You can then run them through `HybridOpticalAttention` under `NoiseConfig`.
-
----
-
-## Where this needs to go next
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Highest-leverage remaining work: end-to-end noisy eval on a real task with converted weights, richer noise (detector, measured Bragg curve), and multi-module system design.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Priority areas: richer noise tied to measured media, FPGA kernel for the score path, multi-module system design, and eval harnesses on real prompts with a tokenizer.
 
 ---
 
