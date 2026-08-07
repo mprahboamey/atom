@@ -1,12 +1,8 @@
 """Minimal structural generate loop using hybrid optical attention.
 
-This is NOT a quality chat model. It demonstrates the control loop:
-  residual stream -> LoadedHybridAttention (optical scores) -> residual
-over a few layers, then a random projection to vocab for toy tokens.
-
-MLP, embeddings, and lm_head are NOT loaded from GGUF here (attention-only
-conversion). Token ids are therefore not meaningful language — the point is
-to show a closed loop that calls the optical score path on real weights.
+Attention weights are real (from convert). Embed / lm_head are toy random
+tables — token ids are not meaningful language. Purpose: closed loop that
+calls the optical score path on real weights.
 
   python examples/13_minimal_hybrid_generate.py --weights ./optical_weights_mistral7b
 """
@@ -22,14 +18,14 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import torch
 
 from atom.hybrid_block import LoadedHybridAttention
-from examples.utils_optical_weights import load_payload, layer_indices
+from atom.optical_weights_io import load_payload, layer_indices
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--weights", type=str, required=True)
-    p.add_argument("--layers", type=int, default=2, help="How many layers to stack")
-    p.add_argument("--steps", type=int, default=4, help="Token steps to emit")
+    p.add_argument("--layers", type=int, default=2)
+    p.add_argument("--steps", type=int, default=4)
     p.add_argument("--seq", type=int, default=8)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--heads", type=int, default=32)
@@ -49,13 +45,12 @@ def main() -> None:
     ]
     dim = blocks[0].w_q.shape[1]
     torch.manual_seed(args.seed)
-    # Toy embedding table and lm head — not from the checkpoint
     vocab = 32000
     embed = torch.randn(vocab, dim) * 0.02
     lm_head = torch.randn(vocab, dim) * 0.02
 
-    token_ids = [1, 2, 3, 4]  # bos-like stub
-    x = embed[token_ids].unsqueeze(0)  # (1, S0, D)
+    token_ids = [1, 2, 3, 4]
+    x = embed[token_ids].unsqueeze(0)
 
     for step in range(args.steps):
         h = x

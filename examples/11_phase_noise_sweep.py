@@ -17,8 +17,8 @@ import torch
 import torch.nn.functional as F
 
 from atom.attention import optical_scores, optical_scores_general
-from atom.noise import NoiseConfig, quantize_phase
-from examples.utils_optical_weights import reconstruct_weight, load_payload
+from atom.noise import NoiseConfig
+from atom.optical_weights_io import reconstruct_weight, load_payload
 
 
 def main() -> None:
@@ -57,7 +57,6 @@ def main() -> None:
                         phase_sigma=sigma,
                         crosstalk=xtalk,
                     )
-                    # positions equal => continuous offset cancels; quant/noise still apply when set
                     pos = torch.arange(args.seq, dtype=torch.float32).unsqueeze(0)
                     optical = optical_scores_general(
                         q_, k_, query_positions=pos, key_positions=pos, noise=noise
@@ -67,7 +66,13 @@ def main() -> None:
                     F.softmax(digital, -1).argmax(-1) == F.softmax(optical, -1).argmax(-1)
                 ).float().mean().item()
                 rows.append(
-                    {"phase_bits": bits, "phase_sigma": sigma, "crosstalk": xtalk, "mse": mse, "top1": top1}
+                    {
+                        "phase_bits": bits,
+                        "phase_sigma": sigma,
+                        "crosstalk": xtalk,
+                        "mse": mse,
+                        "top1": top1,
+                    }
                 )
                 bstr = "inf" if bits is None else str(bits)
                 print(f"{bstr:>4} {sigma:6.2f} {xtalk:6.2f} | {mse:12.4e} {top1:7.1%}")

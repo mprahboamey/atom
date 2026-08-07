@@ -1,7 +1,5 @@
 """Audit optical vs digital scores on every converted attention layer.
 
-Writes a JSON report under results/ (local only; do not commit large artifacts).
-
   python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
 """
 
@@ -19,7 +17,7 @@ import torch
 import torch.nn.functional as F
 
 from atom.attention import optical_scores
-from examples.utils_optical_weights import reconstruct_weight, load_payload, layer_indices
+from atom.optical_weights_io import reconstruct_weight, load_payload, layer_indices
 
 
 def main() -> None:
@@ -59,12 +57,12 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     summary = {
         "n_layers": len(rows),
-        "max_mse": max(r["mse"] for r in rows),
-        "min_top1": min(r["top1"] for r in rows),
+        "max_mse": max(r["mse"] for r in rows) if rows else None,
+        "min_top1": min(r["top1"] for r in rows) if rows else None,
         "layers": rows,
     }
     out.write_text(json.dumps(summary, indent=2))
-    print(f"wrote {out}  max_mse={summary['max_mse']:.3e}  min_top1={summary['min_top1']:.1%}")
+    print(f"wrote {out}  max_mse={summary['max_mse']}  min_top1={summary['min_top1']}")
 
 
 if __name__ == "__main__":
