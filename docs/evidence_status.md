@@ -11,8 +11,10 @@ Software measurements only.
 | Optical vs digital scores, all 32 layers | MSE ~1e-16, top-1 100% |
 | Hybrid attention block (GQA) vs digital | MSE ~1e-18 |
 | Hybrid generate 2-layer and 8-layer from GGUF | Optical greedy == digital greedy |
+| **SmolLM2-135M Instruct safetensors, full 30 layers** | Optical greedy == digital greedy |
 | Unified checkpoint API (GGUF + safetensors) | `atom/hybrid_model.py` |
 | Layer streaming for full-depth generate | `stream_layers=True` |
+| Config-driven head_dim / GQA for HF models | e.g. head_dim=64, 9 heads, 3 kv |
 
 ## Checkpoint plug-in
 
@@ -27,19 +29,12 @@ Inference API does not change when you move from GGUF to safetensors.
 ## Reproduce
 
 ```bash
-# audits on converted attention weights
-python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
-python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
+# GGUF path
+python examples/15_full_depth_generate.py --model /path/to/model.gguf --max-new 4 --compare-digital
 
-# hybrid generate (GGUF today)
+# Safetensors path (HF folder with config.json + model.safetensors)
 python examples/14_hybrid_generate_mistral.py \
-  --model /path/to/model.gguf --stream-layers --max-new 4 --compare-digital
-
-# full depth streaming
-python examples/15_full_depth_generate.py \
-  --model /path/to/model.gguf --max-new 4 --compare-digital
-
-# later: same commands with a safetensors folder as --model
+  --model /path/to/hf-folder --stream-layers --max-new 6 --compare-digital
 ```
 
-Do not commit GGUF, safetensors, or optical_weights_* to git.
+Do not commit model weights to git.
