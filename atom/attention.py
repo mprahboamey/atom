@@ -13,6 +13,7 @@ from .noise import (
     add_phase_noise,
     add_angular_jitter,
     apply_crosstalk,
+    apply_bragg_crosstalk,
     NoiseConfig,
 )
 
@@ -20,18 +21,7 @@ from .noise import (
 def encode_signed_values(values: torch.Tensor) -> torch.Tensor:
     """Encode real values as complex wave amplitudes with sign in phase.
 
-    Phase here only ever takes two values, 0 or pi. That is not a
-    simplification -- it is the *unique* phase choice for which
-    `Re(q_wave * conj(k_wave))` reduces exactly, term for term, to the
-    real product `q * k`. Exact term-wise recovery requires
-    `cos(theta_q - theta_k) = sign(q * k)`, and cosine only hits +/-1
-    at 0 and pi. So this function is the degenerate, binary-phase case
-    used to prove exact equivalence to scaled dot-product attention
-    (see `optical_scores`) -- it is intentionally not a demonstration
-    of genuine continuous-phase interference. For phase that carries
-    real, continuous information (and produces interference effects a
-    plain dot product cannot reproduce), see `encode_angular_phase`
-    and `optical_scores_general`.
+    Phase only takes 0 or pi so Re(q_wave * conj(k_wave)) equals q*k termwise.
     """
     amplitude = values.abs()
     phase = torch.where(values >= 0, torch.zeros_like(values), torch.full_like(values, math.pi))
@@ -45,38 +35,7 @@ def encode_angular_phase(
     phase_bits: int | None = None,
     phase_sigma: float = 0.0,
 ) -> torch.Tensor:
-    """Encode values as waves with a genuine continuous phase.
-
-    Amplitude carries magnitude as before, but phase is now a
-    continuous function of both the value's sign *and* its token's
-    angular position -- modeling angular multiplexing, where each
-    sequence position is addressed at a distinct Bragg angle inside
-    the crystal. This is the same construction as rotary position
-    embeddings, applied here as an optical angle rather than an
-    abstract index.
-
-    `phase_bits`, if given, quantizes the resulting phase to that many
-    bits before encoding -- models a real SLM/crystal that can only
-    address `2**phase_bits` discrete phase levels, instead of an
-    idealized continuous angle. `None` (default) keeps phase exact,
-    matching the ideal theoretical case tested elsewhere.
-
-    `phase_sigma` adds independent Gaussian phase jitter (radians) after
-    any quantization. Default 0.0 leaves phase unchanged.
-
-    IMPORTANT: this phase only produces genuine interference when
-    query and key tokens carry *different* positions -- if both sides
-    of an interference term rotate by the same angle, that rotation
-    cancels in `Re(q_wave * conj(k_wave))` (cos of a zero difference)
-    and you're silently back to the binary case. Callers must pass
-    distinct position tensors for query and key (see
-    `optical_scores_general`), not shared ones.
-
-    `values` is `(..., seq, features)`. `positions` is `(..., seq)`,
-    one angular offset per token, broadcast across feature frequency
-    channels. `positions == 0` everywhere recovers `encode_signed_values`
-    exactly.
-    """
+    """Encode values with continuous phase from sign and token position."""
     amplitude = values.abs()
     sign_phase = torch.where(values >= 0, torch.zeros_like(values), torch.full_like(values, math.pi))
     dim = values.shape[-1]
@@ -96,20 +55,7 @@ def optical_scores(
     key: torch.Tensor,
     normalize: bool = False,
 ) -> torch.Tensor:
-    """Return attention scores from atomal interference.
-
-    Input shape is `(..., sequence, features)`. The result shape is
-    `(..., query_sequence, key_sequence)`.
-
-    With `normalize=False`, this matches scaled dot-product attention:
-    `query @ key.T / sqrt(features)`.
-
-    With `normalize=True`, it returns cosine-like similarity scores.
-
-    This uses `encode_signed_values`, the binary-phase (0/pi) case --
-    see that function's docstring for why phase is degenerate here by
-    construction. For continuous phase, use `optical_scores_general`.
-    """
+    """Binary-phase optical scores; exact match to scaled dot-product."""
     if normalize:
         query = F.normalize(query, p=2, dim=-1)
         key = F.normalize(key, p=2, dim=-1)
@@ -136,19 +82,21 @@ def optical_scores_general(
     crosstalk_kernel: int = 3,
     noise: NoiseConfig | None = None,
 ) -> torch.Tensor:
-    """Attention scores from interference with continuous phase and optional noise.
+    """Scores with continuous phase and optional noise / Bragg crosstalk.
 
-    Ideal binary path (exact match to scaled dot-product) only when positions
-    are None, phase_sigma is 0, and phase_bits is None. If phase_sigma > 0
-    without positions, zero positions are used so noise is still applied
-    (previously phase_sigma was silently ignored).
+    Ideal binary path only when positions are None, phase_sigma is 0, and
+    phase_bits is None. phase_sigma without positions is applied (not silent).
     """
+    bragg_strength = 0.0
+    bragg_sinc_width = 1.5
     if noise is not None:
         phase_bits = noise.phase_bits if noise.phase_bits is not None else phase_bits
         phase_sigma = noise.phase_sigma
         angular_jitter = noise.angular_jitter
         crosstalk = noise.crosstalk
         crosstalk_kernel = noise.crosstalk_kernel
+        bragg_strength = getattr(noise, "bragg_strength", 0.0)
+        bragg_sinc_width = getattr(noise, "bragg_sinc_width", 1.5)
 
     if normalize:
         query = F.normalize(query, p=2, dim=-1)
@@ -168,9 +116,13 @@ def optical_scores_general(
         k_wave = encode_signed_values(key)
     else:
         if query_positions is None:
-            query_positions = torch.zeros(query.shape[:-1], device=query.device, dtype=query.dtype)
+            query_positions = torch.zeros(
+                query.shape[:-1], device=query.device, dtype=query.dtype
+            )
         if key_positions is None:
-            key_positions = torch.zeros(key.shape[:-1], device=key.device, dtype=key.dtype)
+            key_positions = torch.zeros(
+                key.shape[:-1], device=key.device, dtype=key.dtype
+            )
 
         if angular_jitter > 0:
             query_positions = add_angular_jitter(query_positions, angular_jitter)
@@ -186,14 +138,46 @@ def optical_scores_general(
     scores = torch.einsum("...qd,...kd->...qk", q_wave, torch.conj(k_wave)).real
     scores = scores / scale
 
-    if crosstalk > 0:
+    if bragg_strength > 0:
+        scores = apply_bragg_crosstalk(
+            scores, sinc_width=bragg_sinc_width, strength=bragg_strength
+        )
+    elif crosstalk > 0:
         scores = apply_crosstalk(scores, strength=crosstalk, kernel_size=crosstalk_kernel)
 
     return scores
 
 
+def optical_scores_multihead(
+    query: torch.Tensor,
+    key: torch.Tensor,
+    noise: NoiseConfig | None = None,
+) -> torch.Tensor:
+    """Vectorized multi-head optical scores.
+
+    query/key: (batch, heads, seq, dim). Returns (batch, heads, q_seq, k_seq).
+    """
+    if query.ndim != 4 or key.ndim != 4:
+        raise ValueError("expected (batch, heads, seq, dim)")
+    b, h, sq, d = query.shape
+    sk = key.shape[2]
+    q = query.reshape(b * h, sq, d)
+    k = key.reshape(b * h, sk, d)
+    if noise is None or (
+        noise.phase_sigma == 0
+        and noise.angular_jitter == 0
+        and noise.crosstalk == 0
+        and getattr(noise, "bragg_strength", 0) == 0
+        and noise.phase_bits is None
+    ):
+        scores = optical_scores(q, k)
+    else:
+        scores = optical_scores_general(q, k, noise=noise)
+    return scores.reshape(b, h, sq, sk)
+
+
 class OpticalSelfAttention(nn.Module):
-    """A compact self-attention layer whose scores use optical interference math."""
+    """Self-attention layer whose scores use optical interference math."""
 
     def __init__(self, dim: int):
         super().__init__()
