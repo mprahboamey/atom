@@ -2,67 +2,65 @@
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
-Software stack for transformer attention **scores** via optical interference algebra, with hybrid inference on real checkpoints (GGUF today, Hugging Face safetensors when you have them).
+Software stack for transformer attention **scores** via optical interference algebra, with hybrid inference on **real Hugging Face safetensors** checkpoints.
 
-Optical step: score matrix. Digital: softmax, values, MLP, norms, lm_head.
+Optical step: attention score matrix. Digital: softmax, values, MLP, norms, lm_head.
+
+## Primary measured result
+
+On **SmolLM2-135M-Instruct** (public safetensors, full **30 layers**):
+
+```text
+optical greedy sequence == digital greedy sequence
+```
+
+Same token ids when attention scores are computed with the optical path vs standard matmul. Details: [`docs/evidence_status.md`](docs/evidence_status.md), [`docs/results_smollm2_safetensors.md`](docs/results_smollm2_safetensors.md).
 
 ## Status
 
 | Area | Status |
 |------|--------|
 | Optical scores = digital (binary phase) | Verified |
+| Hybrid generate on real **safetensors** (SmolLM2, 30 layers) | **Measured — sequences identical** |
+| Unified loader (safetensors + GGUF) | `atom/hybrid_model.py` |
+| Config-driven head_dim / GQA (e.g. head_dim 64) | Implemented |
 | Noise + M# capacity (Fe:LiNbO₃ defaults) | Implemented |
-| Convert GGUF / safetensors / PyTorch attention weights | Implemented |
-| Mistral-7B: all 32 layers score audit | Measured |
-| Hybrid block parity (GQA) | Measured |
-| Hybrid generate from full GGUF weights | Measured (2 and 8 layers; streaming for 32) |
-| Unified GGUF + safetensors model loader | `atom/hybrid_model.py` |
 | Physical crystal / FPGA | Not built |
-
-See [`docs/evidence_status.md`](docs/evidence_status.md).
 
 ## Install
 
 ```bash
 pip install -e .
-pip install torch gguf safetensors
-# optional: transformers  (text prompts)
+pip install torch safetensors transformers
+# optional: gguf  (if you also use llama.cpp files)
 ```
 
-Do not commit multi-GB model files.
+Do not commit model weight files.
 
-## Workflow
+## Workflow (safetensors first)
 
 ```bash
-# Attention encode + audits
-python examples/08_convert_weights.py --model /path/to/model.gguf --out ./optical_weights_mistral7b
-python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
-python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
-
-# Hybrid generate (same flag works for GGUF or safetensors dir)
+# HF folder with config.json + model.safetensors
 python examples/14_hybrid_generate_mistral.py \
-  --model /path/to/model.gguf \
+  --model /path/to/SmolLM2-135M-Instruct \
   --stream-layers \
-  --max-new 4 \
-  --compare-digital
-
-# Full depth (32 layers), streaming
-python examples/15_full_depth_generate.py \
-  --model /path/to/model.gguf \
-  --max-new 4 \
+  --max-new 6 \
   --compare-digital
 ```
+
+`--compare-digital` checks that optical-score and digital-score greedy outputs match.
 
 ## Layout
 
 ```
 atom/
-  hybrid_model.py   Unified GGUF/safetensors hybrid transformer
-  convert.py        Attention weight -> phase encode
+  hybrid_model.py   Safetensors (and GGUF) hybrid transformer
   attention.py      Optical scores
+  convert.py        Attention weights -> phase encode
   noise.py capacity.py hybrid.py hybrid_block.py
-examples/           01–15
-docs/
+examples/
+docs/evidence_status.md
+docs/results_smollm2_safetensors.md
 ```
 
 ## Contributing

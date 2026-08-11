@@ -1,40 +1,60 @@
 # Evidence status
 
-Software measurements only.
+Software measurements only. No physical optical hardware is claimed.
 
-## Measured
+## Primary result (safetensors)
+
+**Checkpoint:** [HuggingFaceTB/SmolLM2-135M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct)  
+**Format:** real Hugging Face `model.safetensors` + `config.json` (not GGUF, not placeholders)
+
+| Property | Value |
+|----------|--------|
+| Layers | 30 (full model) |
+| Hidden size | 576 |
+| Attention heads | 9 |
+| KV heads | 3 |
+| Head dim | 64 |
+| Vocab | 49152 |
+| Loader | `HybridTransformer.from_checkpoint(..., stream_layers=True)` |
+
+**Hybrid generate (greedy):** optical-score path and digital-score path produced the **same token sequence**.
+
+```text
+prompt:  [1, 2, 3, 4]
+optical: [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
+digital: [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
+identical: True
+```
+
+That is end-to-end inference on a real published weight file: embed, all 30 layers (attention + MLP + norms), lm_head (tied), RoPE, GQA. Only the attention **scores** use the optical interference formulation; the rest is digital matmul on the checkpoint tensors.
+
+## Supporting results
 
 | Item | Result |
 |------|--------|
-| Binary-phase optical scores = scaled dot-product | Float agreement |
-| Mistral-7B Q4_K_M: 128 attention tensors converted | Local run |
-| Optical vs digital scores, all 32 layers | MSE ~1e-16, top-1 100% |
-| Hybrid attention block (GQA) vs digital | MSE ~1e-18 |
-| Hybrid generate 2-layer and 8-layer from GGUF | Optical greedy == digital greedy |
-| **SmolLM2-135M Instruct safetensors, full 30 layers** | Optical greedy == digital greedy |
-| Unified checkpoint API (GGUF + safetensors) | `atom/hybrid_model.py` |
-| Layer streaming for full-depth generate | `stream_layers=True` |
-| Config-driven head_dim / GQA for HF models | e.g. head_dim=64, 9 heads, 3 kv |
+| Binary-phase optical scores = scaled dot-product | Float agreement (unit tests) |
+| Noise hooks + M# capacity (Fe:LiNbO₃ defaults) | Implemented |
+| Config-driven head_dim / GQA for HF models | Required for SmolLM2 (head_dim 64) |
+| Unified checkpoint API | GGUF or safetensors folder, same generate API |
+| Layer streaming | Enables full-depth runs under limited RAM |
 
-## Checkpoint plug-in
+## Not claimed
 
-```text
-HybridTransformer.from_checkpoint(path)
-  path = *.gguf              -> GGUF loader
-  path = HF safetensors dir  -> safetensors loader (same internal layout)
-```
-
-Inference API does not change when you move from GGUF to safetensors.
+- Physical crystal or FPGA measurements
+- Leaderboard / chat quality benchmarks
+- That quantized GGUF dumps are the primary evidence base (safetensors is)
 
 ## Reproduce
 
 ```bash
-# GGUF path
-python examples/15_full_depth_generate.py --model /path/to/model.gguf --max-new 4 --compare-digital
+pip install -e . torch safetensors transformers
 
-# Safetensors path (HF folder with config.json + model.safetensors)
+# download HF folder (config.json + model.safetensors), then:
 python examples/14_hybrid_generate_mistral.py \
-  --model /path/to/hf-folder --stream-layers --max-new 6 --compare-digital
+  --model /path/to/SmolLM2-135M-Instruct \
+  --stream-layers \
+  --max-new 6 \
+  --compare-digital
 ```
 
-Do not commit model weights to git.
+Do not commit model weight files to git.

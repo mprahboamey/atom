@@ -2,14 +2,15 @@
 
 ## Where the project is now
 
-- Optical attention **scores** match digital scaled-dot-product attention (binary phase), including on all 32 layers of a converted Mistral-7B Q4_K_M checkpoint.
-- Hybrid **attention blocks** (GQA) match digital block outputs on those weights when noise is off.
-- Full **GGUF hybrid generate** loads embed, norms, MLP, and lm_head from the same file; scores use the optical path (`atom/gguf_model.py`).
-- Noise models, M# capacity defaults (Fe:LiNbO₃), and conversion from GGUF / safetensors / PyTorch are in-tree.
+- Optical attention **scores** match digital scaled-dot-product attention (binary phase).
+- **Primary end-to-end evidence:** hybrid generate on real **Hugging Face safetensors** — SmolLM2-135M-Instruct, all **30 layers**, optical greedy token sequence identical to digital (`docs/results_smollm2_safetensors.md`).
+- Loader reads HF `config.json` for head_dim / GQA (e.g. 9 heads, 3 KV, head_dim 64).
+- Noise models, M# capacity defaults (Fe:LiNbO₃), and phase encoding tools are in-tree.
+- GGUF remains supported as an alternate input format; **published claims should lead with safetensors results.**
 
-What is still open is mostly systems, media physics, and hardware — not the score identity itself.
+What is still open is mostly systems, media physics, and hardware — not the score identity on a real checkpoint.
 
-Do not commit model weights, GGUF files, or `optical_weights_*` directories.
+Do not commit model weight files or large `optical_weights_*` dumps.
 
 ---
 
@@ -19,17 +20,17 @@ Do not commit model weights, GGUF files, or `optical_weights_*` directories.
 
 **Open:** Thermal fixing and two-photon gating under dense angular multiplexing; measured M# and SNR vs hologram count; scatter models.
 
-**Hook:** `atom/capacity.py` (M#, η_min). Calibrated curves can replace defaults.
+**Hook:** `atom/capacity.py` (M#, η_min).
 
 ---
 
 ## Integrated photonics / FPGA
 
-**Problem:** The score kernel is defined in software; a digital accelerator (FPGA) or eventual optical I/O stack is not.
+**Problem:** Score kernel exists in software; FPGA / optical I/O does not.
 
-**Open:** Fixed-point complex MAC for optical scores; host↔device weight layout (amplitude + phase); peripheral energy (SLM, detectors, ADCs).
+**Open:** Fixed-point complex MAC for optical scores; host↔device weight layout; peripheral energy (SLM, detectors, ADCs).
 
-**Hook:** `atom/attention.py`, `atom/hybrid_block.py`, weight layout from `atom/convert.py`.
+**Hook:** `atom/attention.py`, `atom/hybrid_model.py`.
 
 ---
 
@@ -37,19 +38,19 @@ Do not commit model weights, GGUF files, or `optical_weights_*` directories.
 
 **Present:** Phase quantisation, Gaussian phase noise, angular jitter, soft crosstalk.
 
-**Open:** Measured Bragg selectivity kernels; detector noise; thermal drift; prompt-level eval with a real tokenizer and reported metrics; fix remaining edge cases in bit-width sweeps when continuous-phase quantisation interacts with equal positions.
+**Open:** Bragg-shaped crosstalk from measured selectivity; detector noise; thermal drift; prompt-level eval with tokenizer and reported metrics on safetensors models.
 
-**Hook:** `atom/noise.py`, `examples/10_*`, `examples/11_*`, `examples/14_*`.
+**Hook:** `atom/noise.py`, `examples/14_*`.
 
 ---
 
 ## ML systems
 
-**Present:** Conversion; hybrid block; full GGUF hybrid generate.
+**Present:** Safetensors hybrid generate (full depth on SmolLM2); unified checkpoint API; layer streaming.
 
-**Open:** Faster / lower-memory GGUF load; KV cache for long generate; safetensors parity runs; multi-module partition (rack-scale composition); integration tests that assert optical vs digital greedy match on short prompts.
+**Open:** KV cache for long generate; larger safetensors models under streaming; integration tests that pin optical vs digital greedy match; multi-module partition.
 
-**Hook:** `atom/gguf_model.py`, `atom/convert.py`.
+**Hook:** `atom/hybrid_model.py`.
 
 ---
 
