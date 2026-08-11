@@ -136,34 +136,12 @@ def optical_scores_general(
     crosstalk_kernel: int = 3,
     noise: NoiseConfig | None = None,
 ) -> torch.Tensor:
-    """Attention scores from interference with genuine continuous phase.
+    """Attention scores from interference with continuous phase and optional noise.
 
-    Strict generalization of `optical_scores`. With both position
-    args left as `None`, this is bit-identical to `optical_scores`
-    (the binary-phase case is the zero-position limit of continuous
-    phase). Passing `query_positions` / `key_positions` (one angular
-    offset per token, e.g. `torch.arange(seq_len)`) makes query and
-    key channels accumulate a *relative* angular phase before
-    interfering -- scores become sensitive to relative positional
-    offset in a way a plain dot product structurally cannot be, which
-    is the actual interference effect the binary case was missing.
-
-    `phase_bits`, if given, quantizes phase to that many bits during
-    encoding -- models finite SLM/crystal write precision instead of
-    an idealized continuous angle. Only applies when position args
-    are given; the plain binary case (`encode_signed_values`) is
-    already exactly two phase levels by construction.
-
-    Optional noise (all default to ideal / off):
-    - phase_sigma: Gaussian phase jitter after quantization
-    - angular_jitter: Gaussian jitter on position / Bragg angles
-    - crosstalk: soft leakage between neighbouring angular channels
-    - noise: NoiseConfig that overrides the individual knobs
-
-    Query and key positions must differ for the effect to show up:
-    identical positions on both sides cancel in
-    `Re(q_wave * conj(k_wave))` and silently fall back to the binary
-    case (see `encode_angular_phase`).
+    Ideal binary path (exact match to scaled dot-product) only when positions
+    are None, phase_sigma is 0, and phase_bits is None. If phase_sigma > 0
+    without positions, zero positions are used so noise is still applied
+    (previously phase_sigma was silently ignored).
     """
     if noise is not None:
         phase_bits = noise.phase_bits if noise.phase_bits is not None else phase_bits
@@ -179,7 +157,13 @@ def optical_scores_general(
     else:
         scale = math.sqrt(query.shape[-1])
 
-    if query_positions is None and key_positions is None:
+    use_binary = (
+        query_positions is None
+        and key_positions is None
+        and phase_sigma == 0.0
+        and phase_bits is None
+    )
+    if use_binary:
         q_wave = encode_signed_values(query)
         k_wave = encode_signed_values(key)
     else:
