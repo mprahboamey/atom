@@ -35,9 +35,6 @@ def quantize_phase(phase: torch.Tensor, bits: int) -> torch.Tensor:
     wrapped = torch.remainder(phase, 2 * math.pi)
     step = 2 * math.pi / levels
     quantized = torch.round(wrapped / step) * step
-    # Rounding near the top of the circle can land exactly on 2*pi, which
-    # is the same physical angle as 0 but a distinct float value -- wrap
-    # again so that boundary collapses to the single level it actually is.
     return torch.remainder(quantized, 2 * math.pi)
 
 
@@ -110,3 +107,58 @@ class NoiseConfig:
     angular_jitter: float = 0.0
     crosstalk: float = 0.0
     crosstalk_kernel: int = 3
+    bragg_strength: float = 0.0
+    bragg_sinc_width: float = 1.5
+
+
+def bragg_selectivity_kernel(
+    n_channels: int,
+    sinc_width: float = 1.0,
+    device: torch.device | None = None,
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor:
+    """1D Bragg-like selectivity weights for relative channel offset.
+
+    Approximates volume-hologram angular selectivity as a squared-sinc
+    profile over discrete channel index lag. Returns shape (n_channels,)
+    centered so lag 0 is peak transmission. Not a full volume-grating
+    simulation — a calibrated curve can replace this later.
+    """
+    if n_channels < 1:
+        raise ValueError("n_channels must be positive")
+    if sinc_width <= 0:
+        raise ValueError("sinc_width must be positive")
+    device = device or torch.device("cpu")
+    dtype = dtype or torch.float32
+    lags = torch.arange(n_channels, device=device, dtype=dtype) - (n_channels // 2)
+    x = lags / sinc_width
+    w = torch.sinc(x) ** 2
+    w = w / w.sum().clamp_min(1e-12)
+    return w
+
+
+def apply_bragg_crosstalk(
+    scores: torch.Tensor,
+    sinc_width: float = 1.5,
+    strength: float = 1.0,
+) -> torch.Tensor:
+    """Mix key-axis channels with a Bragg-shaped kernel.
+
+    scores: (..., query, key). strength in [0, 1] blends ideal vs mixed.
+    """
+    if strength <= 0:
+        return scores
+    if strength > 1:
+        raise ValueError("strength must be in [0, 1]")
+    n = scores.shape[-1]
+    kernel = bragg_selectivity_kernel(
+        n, sinc_width=sinc_width, device=scores.device, dtype=scores.dtype
+    )
+    flat = scores.reshape(-1, 1, n)
+    k = kernel.view(1, 1, n)
+    pad = n // 2
+    flat_pad = torch.nn.functional.pad(flat, (pad, pad), mode="replicate")
+    mixed = torch.nn.functional.conv1d(flat_pad, k)
+    mixed = mixed[..., :n]
+    mixed = mixed.reshape(scores.shape)
+    return (1.0 - strength) * scores + strength * mixed
