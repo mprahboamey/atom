@@ -1,43 +1,56 @@
 # Result log: SmolLM2-135M-Instruct safetensors
 
-**Date:** 2026-08-11  
-**Host:** cloud sandbox (not local user machine)  
-**Checkpoint:** HuggingFaceTB/SmolLM2-135M-Instruct (`model.safetensors`, ~256 MB)
+**Checkpoint:** [HuggingFaceTB/SmolLM2-135M-Instruct](https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct)  
+**Format:** Hugging Face `model.safetensors` + `config.json`
 
-## Config (from config.json)
+## Model config
 
-- architecture: LlamaForCausalLM
-- num_hidden_layers: 30
-- hidden_size: 576
-- num_attention_heads: 9
-- num_key_value_heads: 3
-- head_dim: 64
-- rope_theta: 100000
-- tie_word_embeddings: true
+| Field | Value |
+|-------|--------|
+| Layers | 30 |
+| Hidden | 576 |
+| Heads / KV | 9 / 3 |
+| Head dim | 64 |
+| RoPE theta | 100000 |
+| Tied embeddings | yes |
 
-## Run
-
-```text
-HybridTransformer.from_checkpoint(path, max_layers=None, stream_layers=True)
-generate(prompt=[1,2,3,4], max_new_tokens=6, use_optical=True/False)
-```
-
-## Output
+## Result A — fixed token prompt
 
 ```text
-layers=30 hidden=576 heads=9 kv=3
-optical [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
-digital [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
-identical True
+prompt:  [1, 2, 3, 4]
+optical: [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
+digital: [1, 2, 3, 4, 198, 198, 198, 376, 446, 476]
+identical: True
 ```
 
-Decoded (tokenizer, special tokens visible):
+## Result B — natural language prompt
 
 ```text
-optical text: '<|im_start|><|im_end|><repo_name><reponame>\n\n\nus = "'
-digital text: same
+prompt text: "The capital of France is"
+prompt ids:  [504, 3575, 282, 4649, 314]
+optical ids: [504, 3575, 282, 4649, 314, 260, 768, 282, 282]
+digital ids: [504, 3575, 282, 4649, 314, 260, 768, 282, 282]
+identical: True
+optical text: 'The capital of France is the most of of'
+digital text: 'The capital of France is the most of of'
 ```
 
-## Interpretation
+(Generation quality is limited by model size and short decode; the claim is **optical ≡ digital**, not factual correctness.)
 
-On a real HF safetensors weight file, the hybrid optical-score path matches digital greedy decoding for this prompt and depth. Prompt quality is not the claim; **sequence identity under optical vs digital scores** is the claim.
+## Result C — full forward logits (8 tokens)
+
+```text
+logits MSE ~ 7.9e-4   (float16 path; small numeric drift)
+logits top-1 agreement: 100%
+```
+
+## How to reproduce
+
+```bash
+python examples/16_safetensors_text_eval.py \
+  --model /path/to/SmolLM2-135M-Instruct \
+  --prompt "The capital of France is" \
+  --max-new 4
+
+ATOM_SAFETENSORS_MODEL=/path/to/SmolLM2-135M-Instruct pytest tests/test_hybrid_identity.py -q
+```

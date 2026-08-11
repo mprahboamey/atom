@@ -3,32 +3,32 @@
 ## Where the project is now
 
 - Optical attention **scores** match digital scaled-dot-product attention (binary phase).
-- **Primary end-to-end evidence:** hybrid generate on real **Hugging Face safetensors** — SmolLM2-135M-Instruct, all **30 layers**, optical greedy token sequence identical to digital (`docs/results_smollm2_safetensors.md`).
-- Loader reads HF `config.json` for head_dim / GQA (e.g. 9 heads, 3 KV, head_dim 64).
-- Noise models, M# capacity defaults (Fe:LiNbO₃), and phase encoding tools are in-tree.
-- GGUF remains supported as an alternate input format; **published claims should lead with safetensors results.**
+- **Primary evidence:** hybrid generate on real **Hugging Face safetensors** — SmolLM2-135M-Instruct, all **30 layers**, optical greedy **==** digital on fixed and natural-language prompts (`docs/results_smollm2_safetensors.md`).
+- Text eval script: `examples/16_safetensors_text_eval.py`.
+- Optional integration test: `ATOM_SAFETENSORS_MODEL=... pytest tests/test_hybrid_identity.py`.
+- Noise models, M# capacity defaults, phase encoding, and a unified safetensors/GGUF loader are in-tree.
 
-What is still open is mostly systems, media physics, and hardware — not the score identity on a real checkpoint.
+Open work is mostly systems, media physics, and hardware — not whether the score path runs on a real checkpoint.
 
-Do not commit model weight files or large `optical_weights_*` dumps.
+Do not commit model weight files.
 
 ---
 
 ## Materials science
 
-**Problem:** Readout erasure, scatter, and dynamic range in photorefractive / polymer media.
+**Problem:** Readout erasure, scatter, dynamic range.
 
-**Open:** Thermal fixing and two-photon gating under dense angular multiplexing; measured M# and SNR vs hologram count; scatter models.
+**Open:** Thermal fixing / two-color gating under dense multiplexing; measured M#; scatter models.
 
-**Hook:** `atom/capacity.py` (M#, η_min).
+**Hook:** `atom/capacity.py`.
 
 ---
 
 ## Integrated photonics / FPGA
 
-**Problem:** Score kernel exists in software; FPGA / optical I/O does not.
+**Problem:** Score kernel is software-only.
 
-**Open:** Fixed-point complex MAC for optical scores; host↔device weight layout; peripheral energy (SLM, detectors, ADCs).
+**Open:** Fixed-point complex MAC; weight layout; SLM / detector / ADC energy.
 
 **Hook:** `atom/attention.py`, `atom/hybrid_model.py`.
 
@@ -36,19 +36,19 @@ Do not commit model weight files or large `optical_weights_*` dumps.
 
 ## Noise and evaluation
 
-**Present:** Phase quantisation, Gaussian phase noise, angular jitter, soft crosstalk.
+**Present:** Phase quantisation, phase noise, angular jitter, soft crosstalk; text-prompt optical vs digital compare.
 
-**Open:** Bragg-shaped crosstalk from measured selectivity; detector noise; thermal drift; prompt-level eval with tokenizer and reported metrics on safetensors models.
+**Open:** Bragg-shaped crosstalk; detector noise; longer prompts; larger safetensors models; chat-quality metrics (separate from score identity).
 
-**Hook:** `atom/noise.py`, `examples/14_*`.
+**Hook:** `atom/noise.py`, `examples/16_*`.
 
 ---
 
 ## ML systems
 
-**Present:** Safetensors hybrid generate (full depth on SmolLM2); unified checkpoint API; layer streaming.
+**Present:** Full-depth safetensors hybrid generate; streaming; integration test hook.
 
-**Open:** KV cache for long generate; larger safetensors models under streaming; integration tests that pin optical vs digital greedy match; multi-module partition.
+**Open:** KV cache; faster multi-head score path; larger models; CI with a tiny public checkpoint artifact if licensing allows.
 
 **Hook:** `atom/hybrid_model.py`.
 
@@ -58,10 +58,10 @@ Do not commit model weight files or large `optical_weights_*` dumps.
 
 **Present:** Score-level interference equivalence.
 
-**Open:** Optical softmax / value paths; multi-head packing in one volume; training without full backprop through the optical model.
+**Open:** Optical softmax / values; multi-head packing in one volume; training without full optical backprop.
 
 ---
 
 ## General
 
-Issues for bugs and incorrect claims. PRs for code and documentation. If the math is wrong, that is the highest-priority report.
+Issues for bugs and over-claims. PRs for code and docs. Math errors are highest priority.

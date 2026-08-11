@@ -2,65 +2,60 @@
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
-Software stack for transformer attention **scores** via optical interference algebra, with hybrid inference on **real Hugging Face safetensors** checkpoints.
+Software stack for transformer attention **scores** via optical interference algebra, with hybrid inference on real **Hugging Face safetensors** checkpoints.
 
 Optical step: attention score matrix. Digital: softmax, values, MLP, norms, lm_head.
 
 ## Primary measured result
 
-On **SmolLM2-135M-Instruct** (public safetensors, full **30 layers**):
+**SmolLM2-135M-Instruct** (public safetensors, full **30 layers**):
 
-```text
-optical greedy sequence == digital greedy sequence
-```
+- Fixed token prompts: optical greedy **==** digital greedy  
+- Natural language prompt (`"The capital of France is"`): same token sequence and same decoded text both paths  
+- Full-forward logits: **100%** top-1 agreement  
 
-Same token ids when attention scores are computed with the optical path vs standard matmul. Details: [`docs/evidence_status.md`](docs/evidence_status.md), [`docs/results_smollm2_safetensors.md`](docs/results_smollm2_safetensors.md).
+Details: [`docs/evidence_status.md`](docs/evidence_status.md) · [`docs/results_smollm2_safetensors.md`](docs/results_smollm2_safetensors.md)
 
 ## Status
 
 | Area | Status |
 |------|--------|
 | Optical scores = digital (binary phase) | Verified |
-| Hybrid generate on real **safetensors** (SmolLM2, 30 layers) | **Measured — sequences identical** |
+| Hybrid generate on real safetensors (30 layers) | Measured |
+| Text-prompt optical vs digital eval | `examples/16_safetensors_text_eval.py` |
 | Unified loader (safetensors + GGUF) | `atom/hybrid_model.py` |
-| Config-driven head_dim / GQA (e.g. head_dim 64) | Implemented |
-| Noise + M# capacity (Fe:LiNbO₃ defaults) | Implemented |
+| Noise + M# capacity | Implemented |
 | Physical crystal / FPGA | Not built |
 
 ## Install
 
 ```bash
 pip install -e .
-pip install torch safetensors transformers
-# optional: gguf  (if you also use llama.cpp files)
+pip install torch safetensors transformers pytest
 ```
 
 Do not commit model weight files.
 
-## Workflow (safetensors first)
+## Workflow
 
 ```bash
-# HF folder with config.json + model.safetensors
-python examples/14_hybrid_generate_mistral.py \
+python examples/16_safetensors_text_eval.py \
   --model /path/to/SmolLM2-135M-Instruct \
-  --stream-layers \
-  --max-new 6 \
-  --compare-digital
-```
+  --prompt "The capital of France is" \
+  --max-new 4
 
-`--compare-digital` checks that optical-score and digital-score greedy outputs match.
+# optional integration test
+ATOM_SAFETENSORS_MODEL=/path/to/SmolLM2-135M-Instruct pytest tests/test_hybrid_identity.py -q
+```
 
 ## Layout
 
 ```
-atom/
-  hybrid_model.py   Safetensors (and GGUF) hybrid transformer
-  attention.py      Optical scores
-  convert.py        Attention weights -> phase encode
-  noise.py capacity.py hybrid.py hybrid_block.py
-examples/
-docs/evidence_status.md
-docs/results_smollm2_safetensors.md
+atom/hybrid_model.py   Safetensors (and GGUF) hybrid transformer
+atom/attention.py      Optical scores
+examples/16_...        Text-prompt eval
+tests/test_hybrid_identity.py
+docs/
 ```
 
 ## Contributing
