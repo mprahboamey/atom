@@ -2,17 +2,21 @@
 # ATOM
 **Angular-Multiplexed Transformer Optical Model**
 
-Software stack for transformer attention **scores** via optical interference algebra, with hybrid inference on real **Hugging Face safetensors** checkpoints.
+Software stack for transformer attention **scores** via optical interference **algebra**, with hybrid inference on real **Hugging Face safetensors** checkpoints.
 
-Optical step: attention score matrix. Digital: softmax, values, MLP, norms, lm_head.
+- **Optical step (modeled):** attention score matrix  
+- **Digital step:** softmax, values, MLP, norms, lm_head  
 
-## Primary measured result
+Binary-phase scores equal scaled dot-product attention **by construction**. Matching on a real model checks hybrid wiring, not a physical crystal.
+
+Read [`docs/audit_limits.md`](docs/audit_limits.md) and [`docs/validation_audit.md`](docs/validation_audit.md) before citing results.
+
+## Primary measured result (software)
 
 **SmolLM2-135M-Instruct** (public safetensors, full **30 layers**):
 
-- Fixed token prompts: optical greedy **==** digital greedy  
-- Natural language prompt (`"The capital of France is"`): same token sequence and same decoded text both paths  
-- Full-forward logits: **100%** top-1 agreement  
+- Fixed and natural-language prompts: optical greedy **==** digital greedy  
+- Full-forward logits: **100%** top-1 agreement on the logged short sequence  
 
 Details: [`docs/evidence_status.md`](docs/evidence_status.md) · [`docs/results_smollm2_safetensors.md`](docs/results_smollm2_safetensors.md)
 
@@ -20,12 +24,15 @@ Details: [`docs/evidence_status.md`](docs/evidence_status.md) · [`docs/results_
 
 | Area | Status |
 |------|--------|
-| Optical scores = digital (binary phase) | Verified |
-| Hybrid generate on real safetensors (30 layers) | Measured |
-| Text-prompt optical vs digital eval | `examples/16_safetensors_text_eval.py` |
-| Unified loader (safetensors + GGUF) | `atom/hybrid_model.py` |
-| Noise + M# capacity | Implemented |
-| Physical crystal / FPGA | Not built |
+| Binary-phase scores = digital (algebra) | Exact; unit-tested |
+| Hybrid generate on real safetensors (30 layers) | Measured in software |
+| Noise / Bragg-shaped crosstalk hooks | Implemented |
+| M# capacity + readout-refresh **stubs** | Implemented (placeholder material numbers) |
+| Multi-crystal rack **placement** stub | Implemented |
+| FPGA hybrid path | **Scaffold only** (CPU parity + HLS stubs; no board data) |
+| Physical crystal write/read | **Not built** |
+
+Geometric capacity ceilings (e.g. “90T” under infinite dynamic range) are **not** usable capacity. See `docs/benchmarks.md` and `atom/capacity.py`.
 
 ## Install
 
@@ -44,18 +51,20 @@ python examples/16_safetensors_text_eval.py \
   --prompt "The capital of France is" \
   --max-new 4
 
-# optional integration test
-ATOM_SAFETENSORS_MODEL=/path/to/SmolLM2-135M-Instruct pytest tests/test_hybrid_identity.py -q
+python fpga/host/parity_check.py
+pytest tests/test_certainty.py tests/test_refresh.py tests/test_rack.py -q
 ```
 
 ## Layout
 
-```
-atom/hybrid_model.py   Safetensors (and GGUF) hybrid transformer
-atom/attention.py      Optical scores
-examples/16_...        Text-prompt eval
-tests/test_hybrid_identity.py
-docs/
+```text
+atom/attention.py      Score algebra
+atom/hybrid_model.py   Safetensors / GGUF hybrid
+atom/capacity.py       M#-limited capacity
+atom/refresh.py        Readout erase budget stub
+atom/rack.py           Multi-crystal placement stub
+fpga/                  Digital hybrid FPGA scaffold
+docs/validation_audit.md
 ```
 
 ## Contributing

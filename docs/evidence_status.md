@@ -2,7 +2,7 @@
 
 Software measurements only. No physical optical hardware is claimed.
 
-**Read first:** [`audit_limits.md`](audit_limits.md) — what generate-match does and does not prove.
+**Read first:** [`audit_limits.md`](audit_limits.md) · [`validation_audit.md`](validation_audit.md)
 
 ## Primary result (safetensors)
 
@@ -12,24 +12,25 @@ Software measurements only. No physical optical hardware is claimed.
 |-------|--------|
 | Full 30-layer hybrid generate, fixed ids | Optical greedy **==** digital |
 | Natural language prompt | Optical greedy **==** digital |
-| Full-forward logits top-1 | **100%** agreement |
+| Full-forward logits top-1 | **100%** on logged short sequence |
+
+Binary-phase equality is **algebraic**. The model run validates the hybrid stack.
 
 Full log: [`results_smollm2_safetensors.md`](results_smollm2_safetensors.md).
 
-## Interpretation (strict)
-
-Binary-phase optical scores equal digital scores **by construction** (phase ∈ {0, π}). Matching on SmolLM2 validates the **hybrid wiring** (projections, GQA, RoPE, MLP, lm_head), not independent optical physics.
-
-## Supporting
+## Supporting (software)
 
 | Item | Status |
 |------|--------|
-| Noise + M# modules | Implemented |
-| phase_sigma no longer silently dropped without positions | Fixed |
-| Unified safetensors / GGUF loader | Yes |
+| Noise + Bragg crosstalk hooks | Implemented + tests |
+| M# capacity model | Implemented; defaults not lab-measured here |
+| Readout refresh stub | Placeholder erase curve |
+| Rack placement stub | Logical shards/links only |
+| FPGA path | Scaffold; no board joules |
 
 ## Not claimed
 
-- Physical device results
-- That software match implies crystal feasibility alone
-- Chat quality of small-model generations
+- Physical device results  
+- Operational “90T” storage  
+- FPGA energy/latency  
+- Continuous-phase path = measured Bragg physics  
