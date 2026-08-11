@@ -1,5 +1,9 @@
 """Phase-bit and noise sweep on a real converted layer.
 
+Uses the binary-phase optical path for ideal and phase_bits-only cases
+(phase_bits on Q/K amplitudes is already baked into converted weights).
+Continuous-phase + noise is only used when phase_sigma or crosstalk > 0.
+
   python examples/11_phase_noise_sweep.py --weights ./optical_weights_mistral7b --layer 0
 """
 
@@ -45,37 +49,20 @@ def main() -> None:
     digital = (q_ @ k_.transpose(-2, -1)) / math.sqrt(d)
 
     rows = []
-    print(f"{'bits':>4} {'sigma':>6} {'xtalk':>6} | {'MSE':>12} {'top1':>8}")
-    for bits in (4, 6, 8, None):
-        for sigma in (0.0, 0.02, 0.05):
-            for xtalk in (0.0, 0.05):
-                if bits is None and sigma == 0 and xtalk == 0:
-                    optical = optical_scores(q_, k_)
-                else:
-                    noise = NoiseConfig(
-                        phase_bits=bits,
-                        phase_sigma=sigma,
-                        crosstalk=xtalk,
-                    )
-                    pos = torch.arange(args.seq, dtype=torch.float32).unsqueeze(0)
-                    optical = optical_scores_general(
-                        q_, k_, query_positions=pos, key_positions=pos, noise=noise
-                    )
-                mse = (digital - optical).pow(2).mean().item()
-                top1 = (
-                    F.softmax(digital, -1).argmax(-1) == F.softmax(optical, -1).argmax(-1)
-                ).float().mean().item()
-                rows.append(
-                    {
-                        "phase_bits": bits,
-                        "phase_sigma": sigma,
-                        "crosstalk": xtalk,
-                        "mse": mse,
-                        "top1": top1,
-                    }
-                )
-                bstr = "inf" if bits is None else str(bits)
-                print(f"{bstr:>4} {sigma:6.2f} {xtalk:6.2f} | {mse:12.4e} {top1:7.1%}")
+    print(f"{'sigma':>6} {'xtalk':>6} | {'MSE':>12} {'top1':>8}")
+    for sigma in (0.0, 0.02, 0.05):
+        for xtalk in (0.0, 0.05):
+            if sigma == 0.0 and xtalk == 0.0:
+                optical = optical_scores(q_, k_)
+            else:
+                noise = NoiseConfig(phase_sigma=sigma, crosstalk=xtalk)
+                optical = optical_scores_general(q_, k_, noise=noise)
+            mse = (digital - optical).pow(2).mean().item()
+            top1 = (
+                F.softmax(digital, -1).argmax(-1) == F.softmax(optical, -1).argmax(-1)
+            ).float().mean().item()
+            rows.append({"phase_sigma": sigma, "crosstalk": xtalk, "mse": mse, "top1": top1})
+            print(f"{sigma:6.2f} {xtalk:6.2f} | {mse:12.4e} {top1:7.1%}")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

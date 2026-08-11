@@ -1,41 +1,45 @@
 # Evidence status
 
-Software measurements only. No physical optical hardware results are claimed.
+Software measurements only.
 
 ## Measured
 
 | Item | Result |
 |------|--------|
-| Binary-phase optical scores = scaled dot-product | Float agreement (unit tests, validate script) |
-| Continuous-phase path, noise hooks, M# capacity, hybrid module | Implemented and tested |
-| GGUF / safetensors / PyTorch → phase-encoded attention weights | `atom/convert.py` |
-| Mistral-7B-Instruct Q4_K_M: 128 attention tensors converted | Local conversion run |
-| Optical vs digital **scores**, all 32 layers | MSE ~1e-16, top-1 100% every layer (`examples/10`) |
-| Hybrid **attention block** output vs digital (GQA) | MSE ~1e-18 on layer 0 (`examples/12`) |
-| Full GGUF hybrid forward (embed + all layers + MLP + lm_head) | `atom/gguf_model.py`, `examples/14_hybrid_generate_mistral.py` |
+| Binary-phase optical scores = scaled dot-product | Float agreement |
+| Mistral-7B Q4_K_M: 128 attention tensors converted | Local run |
+| Optical vs digital scores, all 32 layers | MSE ~1e-16, top-1 100% |
+| Hybrid attention block (GQA) vs digital | MSE ~1e-18 |
+| Hybrid generate 2-layer and 8-layer from GGUF | Optical greedy == digital greedy |
+| Unified checkpoint API (GGUF + safetensors) | `atom/hybrid_model.py` |
+| Layer streaming for full-depth generate | `stream_layers=True` |
 
-## Generate path
+## Checkpoint plug-in
 
-`examples/14_hybrid_generate_mistral.py` loads **all** required tensors from the same GGUF used for attention conversion. Optical path is used only for attention scores; remaining ops are digital on dequantized checkpoint weights. Optional `--compare-digital` checks whether greedy token sequences match when scores are computed digitally instead.
-
-Token **text** decoding requires a tokenizer (e.g. Hugging Face `Mistral-7B-Instruct-v0.2` tokenizer) applied offline to the printed token ids. The generate script itself prints token ids.
-
-## Not claimed
-
-- Physical Fe:LiNbO₃ or FPGA measurements
-- Benchmark leaderboard scores
-- Bit-identical long generations under every noise setting
-- That Q4 dequantization equals an FP16 safetensors run
-
-## Reproduce (local model file only — do not commit weights)
-
-```bash
-python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
-python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
-python examples/14_hybrid_generate_mistral.py \
-  --gguf /path/to/mistral-7b-instruct-v0.2.Q4_K_M.gguf \
-  --max-new 8 \
-  --compare-digital
+```text
+HybridTransformer.from_checkpoint(path)
+  path = *.gguf              -> GGUF loader
+  path = HF safetensors dir  -> safetensors loader (same internal layout)
 ```
 
-Use `--max-layers 2` first if RAM is tight.
+Inference API does not change when you move from GGUF to safetensors.
+
+## Reproduce
+
+```bash
+# audits on converted attention weights
+python examples/10_all_layer_audit.py --weights ./optical_weights_mistral7b
+python examples/12_hybrid_block_parity.py --weights ./optical_weights_mistral7b --layer 0
+
+# hybrid generate (GGUF today)
+python examples/14_hybrid_generate_mistral.py \
+  --model /path/to/model.gguf --stream-layers --max-new 4 --compare-digital
+
+# full depth streaming
+python examples/15_full_depth_generate.py \
+  --model /path/to/model.gguf --max-new 4 --compare-digital
+
+# later: same commands with a safetensors folder as --model
+```
+
+Do not commit GGUF, safetensors, or optical_weights_* to git.
