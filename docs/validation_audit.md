@@ -1,7 +1,9 @@
 # Validation audit (senior pass)
 
 Cross-check of claims in README / docs / code against math and literature.
-No hardware was measured for this note.
+No hardware was measured in this repository.
+
+For external photonic/transformer chips and Fe:LN M#, see also [`related_work_hardware.md`](related_work_hardware.md).
 
 ---
 
@@ -9,15 +11,16 @@ No hardware was measured for this note.
 
 **Claim in places:** optical scores verified equal to scaled dot-product.
 
-**Fact:** For phase ∈ {0, π},  
-`Re(q_wave conj(k_wave)) = q·k` **identically**.  
+**Fact:** For phase ∈ {0, π},
+`Re(q_wave conj(k_wave)) = q·k` **identically**.
 Random-tensor max error in tests: 0.
 
-**Caveat:** This is not an experimental discovery about light.  
+**Caveat:** This is not an experimental discovery about light.
 **Literature:** Standard complex encoding; any two-level phase product recovers the real product.
 
-**Implication for docs:** Say **by construction** + **hybrid wiring verified on safetensors**.  
-Do not imply a crystal was tested.
+**Related hardware (2025):** Tian et al. (PhotoniX) demonstrate interference-based attention on a **silicon photonic** chip with mean attention-matrix error ~8.9×10⁻⁴. That supports “interference attention on real chips,” **not** equivalence to ATOM’s binary-phase = `QKᵀ/√d` contract (they use a different KKA mechanism).
+
+**Implication for docs:** Say exact software identity + hybrid wiring on safetensors. Cite PTC as related photonics, not as our crystal result.
 
 ---
 
@@ -33,14 +36,12 @@ Do not imply a crystal was tested.
 
 ## 3. Geometric “90T” capacity
 
-**Fact in benchmarks:**  
+**Fact in benchmarks:**
 `1000 depth × 900 angles × 10^8 pixels ≈ 9×10^13` under **assumed** 1 µm pixels, 10 µm layers, 0.1° steps, 90° range, **infinite dynamic range**.
 
-**Caveat A — M#:** Usable holograms obey η ≈ (M#/M)² (Mok / Psaltis).  
-Typical Fe:LiNbO₃: M# often **O(1)–O(10)** depending on thickness, doping, geometry; 90° geometry often **worse** than transmission (literature cites ~1–2 scale for 90° Fe:LN class).  
-**Code:** `capacity.usable_capacity` applies this; geometric ceiling must never be sold as deliverable capacity.
+**Caveat A — M#:** Usable holograms obey η ≈ (M#/M)² (Mok / Psaltis). Typical Fe:LiNbO₃ **90°** geometry: M# often **~O(1–few) per cm** in published tables; transmission geometry often higher. Code default `m_number=2.0` is a **conservative literature-class placeholder**, not a lab measurement in this repo.
 
-**Caveat B — Angular channels are not free:** Bragg selectivity width scales with thickness and index; **0.1° × 900 independent channels is a modeling assumption**, not a measured comb for 1 cm³ in this repo.
+**Caveat B — Angular channels are not free:** Bragg selectivity width scales with thickness and index; **0.1° × 900 independent channels is a modeling assumption**, not a measured comb for 1 cm³ here.
 
 **Caveat C — Noise / scatter / BER:** Storage density papers show practical density << geometric bound once SNR and crosstalk matter.
 
@@ -50,74 +51,62 @@ Typical Fe:LiNbO₃: M# often **O(1)–O(10)** depending on thickness, doping, g
 
 ## 4. Refractive index in benchmarks
 
-**Doc had:** n ≈ 1.5 “typical photorefractive.”  
-**LiNbO₃:** n_o / n_e roughly **~2.2 / ~2.3** in the visible (order of magnitude).  
-1.5 understates LN; fine as a generic placeholder, **wrong as “LiNbO₃.”** Corrected in benchmarks language.
+**LiNbO₃:** n_o / n_e roughly **~2.2 / ~2.3** in the visible. Do not label 1.5 as LiNbO₃.
 
 ---
 
 ## 5. Bragg formula wording
 
-Benchmarks showed `2 · d_grating · sin(θ) = m · λ`.  
-In-medium form is `2 n Λ sin(θ_B) = m λ` (definitions of θ and Λ vary by geometry).  
-Treat as **schematic**, not a design equation for 0.1° spacing.
+Schematic in-medium form: `2 n Λ sin(θ_B) ≈ m λ`. Treat as schematic, not a design equation for 0.1° spacing.
 
 ---
 
 ## 6. Destructive readout / refresh
 
-**Fact:** Same-wavelength readout can erase unfixed photorefractive gratings.  
-**Software:** `atom/refresh.py` uses η(n) ≈ η0 exp(−n/n_erase) with **placeholder** n_erase (e.g. 500).  
-**Caveat:** n_erase is **not** calibrated to a published erase curve for a specific crystal/intensity.  
-**Literature path:** thermal fixing, two-color / gated recording → non-volatility tradeoffs vs sensitivity and M# (Adibi / Buse / Psaltis and related work).
+**Fact:** Same-wavelength readout can erase unfixed photorefractive gratings.
+**Software:** `atom/refresh.py` uses η(n) ≈ η0 exp(−n/n_erase) with **placeholder** n_erase.
+**Caveat:** n_erase is **not** calibrated to a published erase curve for a specific crystal/intensity.
+**Literature path:** thermal fixing, two-color / gated recording → non-volatility tradeoffs vs sensitivity and M#.
 
 ---
 
 ## 7. Continuous-phase “angular multiplexing” in software
 
-**Fact:** `encode_angular_phase` is **RoPE-structured** (`position * base^(-i/dim)`).  
+**Fact:** `encode_angular_phase` is **RoPE-structured** (`position * base^(-i/dim)`).
 **Caveat:** Relative-position effects are expected math, **not** a measured Bragg angular multiplex experiment.
 
 ---
 
 ## 8. “Speed of light through the crystal” leap
 
-**Old risk in benchmarks:** correct interference math ⇒ physical device does attention at c.  
-**Reject as written:** ignores detection, SLM, electronics, SNR, multiplexing schedule, and that **hybrid** softmax/MLP remain digital.  
-Audit rule: math correctness ≠ system latency claim.
+Correct interference math ≠ system latency claim. Detection, modulation, hybrid digital stages, and SNR dominate real systems.
 
 ---
 
 ## 9. FPGA path
 
-**Fact:** `fpga/` is a **scaffold** (CPU parity + HLS stubs).  
+**Fact:** `fpga/` is a **scaffold** (CPU parity + HLS stubs).
 **Caveat:** No bitstream, no joules, no board run in this repository.
 
 ---
 
 ## 10. Rack / multi-crystal
 
-**Fact:** `atom/rack.py` plans shards and logical interconnects.  
-**Caveat:** No distributed runtime, no optical/electrical link model with measured bandwidth.
+**Fact:** `atom/rack.py` plans shards and logical interconnects.
+**Caveat:** No distributed runtime, no measured link model.
 
 ---
 
-## Claim cheatsheet (use in README / external talk)
+## Claim cheatsheet
 
 | Statement | Allowed? |
 |-----------|----------|
 | Binary-phase scores equal digital scores by algebra | Yes |
 | Hybrid software matches digital greedy on SmolLM2 for logged runs | Yes |
+| Interference-based attention exists on fabricated SiPh chips (e.g. Tian 2025) | Yes, with citation |
+| That chip is our binary-phase / Fe:LN pipeline | **No** |
 | Geometric 90T is an infinite-dynamic-range ceiling under stated assumptions | Yes, if labeled |
-| Usable capacity is M#-limited and defaults are placeholders | Yes |
+| M#≈2 is a conservative 90° Fe:LN literature-class default | Yes, as placeholder |
+| M#=2 measured on our crystal | **No** |
 | Photorefractive optical LLM demonstrated | **No** |
 | FPGA energy measured | **No** |
-| Continuous-phase path = lab Bragg multiplex | **No** |
-| n_erase = 500 is measured | **No** |
-
----
-
-## Residual open (software vs physics)
-
-**Software can still add:** small-weight write scaling, rack↔refresh control loop, staged hybrid sim, stronger noise models.  
-**Physics must supply:** measured M#, erase curves, Bragg comb, write SNR for *your* medium.
